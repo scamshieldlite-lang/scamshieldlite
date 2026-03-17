@@ -1,12 +1,12 @@
-# POST http://localhost:3000/api/auth/sign-up/email
-# Content-Type: application/json
-# Origin: http://localhost:3000
+POST http://localhost:3000/api/auth/sign-up/email
+Content-Type: application/json
+Origin: http://localhost:3000
 
-# {
-#     "email": "test-user-99@example.com",
-#     "password": "password123",
-#     "name": "Test User"
-# }
+{
+    "email": "test-user-99@example.com",
+    "password": "password123",
+    "name": "Test User"
+}
 
 # ### Sign In Request
 # POST http://localhost:3000/api/auth/sign-in/email
@@ -23,6 +23,6 @@
 
 # 5. Hit scan route WITH token — expect Phase 5 stub message
 ### Test Scan Route with Token
-GET http://localhost:3000/api/scans
-Authorization: Bearer kGZuNcZH7kxRSG6KY5iAc7tC0t0BP2gS
-Origin: http://localhost:3000
+# GET http://localhost:3000/api/scans
+# Authorization: Bearer kGZuNcZH7kxRSG6KY5iAc7tC0t0BP2gS
+# Origin: http://localhost:3000

@@ -1,15 +1,16 @@
-// src/lib/auth.ts
-
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "../db";
 import * as schema from "../db/schema";
+import { subscriptions } from "../db/schema";
 import { env } from "../utils/env";
+import { logger } from "../utils/logger";
+import { createAuthMiddleware } from "better-auth/api";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
-    schema, // passes your full schema so BA finds its tables
+    schema,
   }),
 
   secret: env.BETTER_AUTH_SECRET,
@@ -17,28 +18,52 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // flip to true before Play Store release
+    requireEmailVerification: false,
     minPasswordLength: 8,
   },
 
   session: {
-    expiresIn: 60 * 60 * 24 * 30, // 30 days
-    updateAge: 60 * 60 * 24, // refresh session if older than 1 day
-    cookieCache: {
-      enabled: true,
-      maxAge: 60 * 5, // 5 min client cache
-    },
+    expiresIn: 60 * 60 * 24 * 30,
+    updateAge: 60 * 60 * 24,
+    cookieCache: { enabled: true, maxAge: 60 * 5 },
   },
 
-  // Mobile app origins — React Native doesn't use cookies so we
-  // rely on Bearer tokens in Authorization header instead
   trustedOrigins: env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()),
-  logger: {
-    level: "debug",
-    enabled: true,
+
+  // ── Lifecycle hooks ─────────────────────────────────────────────
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      // 2. Wrap the whole function
+      // matcher logic moves inside the handler for global hooks
+      if (ctx.path === "/sign-up/email") {
+        try {
+          // In v1.5+, the session is inside ctx.context.newSession
+          const userId = ctx.context.newSession?.user?.id;
+
+          if (!userId) {
+            logger.warn("Signup successful but no user ID found in session");
+            return;
+          }
+
+          const trialStart = new Date();
+          const trialEnd = new Date();
+          trialEnd.setDate(trialEnd.getDate() + 3);
+
+          await db.insert(subscriptions).values({
+            userId,
+            status: "trialing",
+            trialStart,
+            trialEnd,
+          });
+
+          logger.info("Trial subscription created", { userId, trialEnd });
+        } catch (error) {
+          logger.error("Failed to create trial subscription", error);
+        }
+      }
+    }),
   },
 });
 
-// Infer types used elsewhere
 export type Session = typeof auth.$Infer.Session;
 export type User = typeof auth.$Infer.Session.user;
