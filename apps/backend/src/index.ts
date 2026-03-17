@@ -1,3 +1,5 @@
+// apps/backend/src/index.ts
+
 import "dotenv/config";
 import express, { Application } from "express";
 import cors from "cors";
@@ -36,7 +38,7 @@ app.use(apiRateLimiter);
 
 // ─── Better Auth — must be mounted BEFORE other routes ────────────────────────
 // Handles all /api/auth/* routes internally
-app.all("/api/auth/*", toNodeHandler(auth));
+app.use("/api/auth", toNodeHandler(auth));
 
 // ─── App routes ───────────────────────────────────────────────────────────────
 app.use("/health", healthRoutes);

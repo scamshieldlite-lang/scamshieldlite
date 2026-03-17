@@ -33,6 +33,10 @@ export const auth = betterAuth({
   // Mobile app origins — React Native doesn't use cookies so we
   // rely on Bearer tokens in Authorization header instead
   trustedOrigins: env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()),
+  logger: {
+    level: "debug",
+    enabled: true,
+  },
 });
 
 // Infer types used elsewhere
