@@ -13,8 +13,8 @@ import { auth } from "./lib/auth";
 import { apiRateLimiter } from "./middleware/rateLimiter";
 import { errorHandler } from "./middleware/errorHandler";
 
-import healthRoutes from "./routes/health.routes";
-import scanRoutes from "./routes/scan.routes";
+import healthRoutes from "./routes/health.route";
+import scanRoutes from "./routes/scan.route";
 
 const app: Application = express();
 
@@ -56,12 +56,15 @@ app.use(errorHandler);
 async function bootstrap(): Promise<void> {
   await testDbConnection();
 
-  const port = parseInt(env.PORT);
+  const port = env.PORT;
   app.listen(port, () => {
-    logger.info(`Server running on port ${port}`, {
-      env: env.NODE_ENV,
-      authUrl: env.BETTER_AUTH_URL,
-    });
+    logger.info(
+      {
+        env: env.NODE_ENV,
+        authUrl: env.BETTER_AUTH_URL,
+      },
+      `Server running on port ${port}`,
+    );
 
     if (isDev) {
       logger.info(`Health: http://localhost:${port}/health`);
