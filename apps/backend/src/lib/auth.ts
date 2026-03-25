@@ -1,69 +1,73 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "../db";
-import * as schema from "../db/schema";
-import { subscriptions } from "../db/schema";
-import { env } from "../utils/env";
-import { logger } from "../utils/logger";
+import { db } from "@/db";
+import * as schema from "@/db/schema";
+import { env } from "@/utils/env";
+import { logger } from "@/utils/logger";
+import { subscriptionService } from "@/services/subscription.service";
 import { createAuthMiddleware } from "better-auth/api";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
-    schema,
+    schema, // Pass the whole schema so Better Auth can find user/session tables
   }),
 
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
 
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: false,
-    minPasswordLength: 8,
-  },
+  // 1. Important: Keep your trusted origins for the Mobile/Web app
+  trustedOrigins: env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()),
 
   session: {
-    expiresIn: 60 * 60 * 24 * 30,
-    updateAge: 60 * 60 * 24,
+    expiresIn: 60 * 60 * 24 * 30, // 30 days
+    updateAge: 60 * 60 * 24, // 1 day
     cookieCache: { enabled: true, maxAge: 60 * 5 },
   },
 
-  trustedOrigins: env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()),
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+    requireEmailVerification: false,
+    autoSignIn: true,
+  },
 
-  // ── Lifecycle hooks ─────────────────────────────────────────────
   hooks: {
+    // Change this from an array to a single middleware call
     after: createAuthMiddleware(async (ctx) => {
-      // 2. Wrap the whole function
-      // matcher logic moves inside the handler for global hooks
+      // Manually match the path inside the middleware
       if (ctx.path === "/sign-up/email") {
         try {
-          // In v1.5+, the session is inside ctx.context.newSession
-          const userId = ctx.context.newSession?.user?.id;
+          // In Better Auth v1.5+, check both locations for the ID
+          const userId =
+            ctx.context.newSession?.user?.id || ctx.context.newSession?.user.id;
 
           if (!userId) {
-            logger.warn("Signup successful but no user ID found in session");
+            logger.warn(
+              "Signup successful but no user ID found for subscription",
+            );
             return;
           }
 
-          const trialStart = new Date();
-          const trialEnd = new Date();
-          trialEnd.setDate(trialEnd.getDate() + 3);
-
-          await db.insert(subscriptions).values({
+          await subscriptionService.createTrialSubscription(
             userId,
-            status: "trialing",
-            trialStart,
-            trialEnd,
-          });
+            env.TRIAL_DURATION_DAYS,
+          );
 
-          logger.info("Trial subscription created", { userId, trialEnd });
+          logger.info({ userId }, "Trial subscription created for new user");
         } catch (error) {
-          logger.error("Failed to create trial subscription", error);
+          logger.error({ error }, "Failed to create trial subscription");
         }
       }
     }),
   },
+
+  advanced: {
+    // 4. Ensures cookies work on Render/Railway/Vercel (Production only)
+    useSecureCookies: env.NODE_ENV === "production",
+  },
 });
 
+export type Auth = typeof auth;
 export type Session = typeof auth.$Infer.Session;
 export type User = typeof auth.$Infer.Session.user;

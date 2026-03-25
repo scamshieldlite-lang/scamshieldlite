@@ -1,30 +1,40 @@
 import type { Request, Response, NextFunction } from "express";
-import { logger } from "../utils/logger";
-import { isDev } from "../utils/env";
-
-export interface AppError extends Error {
-  statusCode?: number;
-  code?: string;
-}
+import { AppError } from "@/utils/errors";
+import { logger } from "@/utils/logger";
+import type { ApiError } from "@scamshieldlite/shared";
 
 export function errorHandler(
-  err: AppError,
+  err: Error,
   req: Request,
   res: Response,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: NextFunction,
 ): void {
-  const statusCode = err.statusCode ?? 500;
+  // Known application error — respond with structured payload
+  if (err instanceof AppError) {
+    const body: ApiError = {
+      error: err.message,
+      code: err.code,
+      ...(err.scansRemaining !== undefined && {
+        scansRemaining: err.scansRemaining,
+      }),
+    };
 
-  logger.error(`${req.method} ${req.path} — ${err.message}`, {
-    statusCode,
-    stack: isDev ? err.stack : undefined,
-  });
+    logger.warn(
+      { requestId: req.id, code: err.code, statusCode: err.statusCode },
+      err.message,
+    );
 
-  res.status(statusCode).json({
-    success: false,
-    error: statusCode === 500 ? "Internal server error." : err.message,
-    // Only expose stack trace in development
-    ...(isDev && { stack: err.stack }),
-  });
+    res.status(err.statusCode).json(body);
+    return;
+  }
+
+  // Unknown error — don't leak internals
+  logger.error({ requestId: req.id, err }, "Unhandled error");
+
+  const body: ApiError = {
+    error: "Something went wrong",
+    code: "SERVER_ERROR",
+  };
+
+  res.status(500).json(body);
 }
