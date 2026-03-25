@@ -9,7 +9,7 @@ import { toNodeHandler } from "better-auth/node";
 const router: Router = Router();
 
 // Better Auth handles all /api/auth/* routes natively
-router.all("/auth/*", toNodeHandler(auth));
+router.use("/auth/", toNodeHandler(auth));
 
 // Application routes
 router.use("/health", healthRouter);
