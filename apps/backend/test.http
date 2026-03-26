@@ -1,0 +1,42 @@
+# POST http://localhost:3000/api/auth/sign-up/email
+# Content-Type: application/json
+# Origin: http://localhost:3000
+
+# {
+#     "email": "test-user-99@example.com",
+#     "password": "password123",
+#     "name": "Test User"
+# }
+
+# ### Sign In Request
+# POST http://localhost:3000/api/auth/sign-in/email
+# Content-Type: application/json
+# Origin: http://localhost:3000
+
+# {
+#     "email": "test-user-99@example.com",
+#     "password": "password123"
+# }
+
+# 4. Hit protected scan route without token — expect 401
+# http://localhost:3000/api/scans
+
+# 5. Hit scan route WITH token — expect Phase 5 stub message
+### Test Scan Route with Token
+# GET http://localhost:3000/api/scans
+# Authorization: Bearer kGZuNcZH7kxRSG6KY5iAc7tC0t0BP2gS
+# Origin: http://localhost:3000
+
+### Get Scan Usage (Guest)
+GET http://localhost:3000/api/scan/usage
+X-Device-Fingerprint: test-device-abc123
+Content-Type: application/json
+
+### Run a Scan (Guest)
+POST http://localhost:3000/api/scan
+X-Device-Fingerprint: test-device-abc123
+Content-Type: application/json
+
+{
+    "content": "Congratulations! You have won 1,000,000 Naira. Click here to claim: http://scam.link"
+}

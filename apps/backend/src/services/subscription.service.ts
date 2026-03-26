@@ -13,6 +13,19 @@ export type SubscriptionStatus =
 
 export const subscriptionService = {
   /**
+   * Fetch the full subscription row for a user.
+   */
+  async getSubscription(userId: string) {
+    const [sub] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .limit(1);
+
+    return sub || null;
+  },
+
+  /**
    * Create a new trial - perfect for your auth hook
    */
   async createTrialSubscription(

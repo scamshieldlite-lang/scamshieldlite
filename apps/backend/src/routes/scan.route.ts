@@ -1,14 +1,17 @@
 import { Router } from "express";
 import { optionalAuth } from "@/middleware/optionalAuth";
+import { rateLimitMiddleware } from "@/middleware/rateLimit";
 import { scanController } from "@/controllers/scan.controller";
 
 const router: Router = Router();
 
-// Both guests and registered users can scan
-// optionalAuth attaches user if token present, otherwise continues as guest
-router.post("/", optionalAuth, scanController.analyze);
+// Usage check — no rate limit consumed, just reads current state
+router.get("/usage", optionalAuth, scanController.getUsage);
 
-// Registered users only — scan history
+// Scan — rate limit applied here, after optionalAuth resolves identity
+router.post("/", optionalAuth, rateLimitMiddleware, scanController.analyze);
+
+// History — registered users only
 router.get("/history", scanController.getHistory);
 
 export default router;

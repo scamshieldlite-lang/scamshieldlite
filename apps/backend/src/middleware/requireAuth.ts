@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { auth } from "@/lib/auth";
 import { UnauthorizedError } from "@/utils/errors";
+import { RateLimitResult } from "@/services/rateLimit.service";
 
 // Extend Express Request to carry the session
 declare global {
@@ -8,6 +9,8 @@ declare global {
     interface Request {
       user?: { id: string; email: string; name: string | null };
       sessionId?: string;
+      id?: string; // For request tracing
+      rateLimitResult?: RateLimitResult;
     }
   }
 }
