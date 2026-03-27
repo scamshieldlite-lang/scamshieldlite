@@ -28,15 +28,69 @@
 # Origin: http://localhost:3000
 
 ### Get Scan Usage (Guest)
-GET http://localhost:3000/api/scan/usage
-X-Device-Fingerprint: test-device-abc123
-Content-Type: application/json
+# GET http://localhost:3000/api/scan/usage
+# X-Device-Fingerprint: test-device-abc123
+# Content-Type: application/json
 
-### Run a Scan (Guest)
-POST http://localhost:3000/api/scan
-X-Device-Fingerprint: test-device-abc123
+# ### Run a Scan (Guest)
+# POST http://localhost:3000/api/scan
+# X-Device-Fingerprint: test-device-abc123
+# Content-Type: application/json
+
+# {
+#     "content": "Congratulations! You have won 1,000,000 Naira. Click here to claim: http://scam.link"
+# }
+
+# "USPS: The package [ZIP_CODE] has arrived at the warehouse but cannot be delivered due to incomplete address information. Please update here: https://usps-redelivery-info.com"
+
+# POST http://localhost:3000/api/scan
+# X-Device-Fingerprint: lagos-tester-001
+# Content-Type: application/json
+
+# {
+#     "content": "Amazon: Your account has been locked due to suspicious activity. Please verify your identity at http://amazon-security-login.net within 24 hours to avoid permanent suspension."
+# }
+
+@baseUrl = http://localhost:3000/api
+@fingerprint = test-device-002
+
+### 1. Test a Safe Message
+# Expected: risk_score < 20, risk_level: "Likely Safe"
+POST {{baseUrl}}/scan
 Content-Type: application/json
+X-Device-Fingerprint: {{fingerprint}}
 
 {
-    "content": "Congratulations! You have won 1,000,000 Naira. Click here to claim: http://scam.link"
+  "text": "Hi, just checking if we are still meeting tomorrow at 3pm?",
+  "deviceFingerprint": "{{fingerprint}}"
 }
+
+
+### 2. Test a Nigerian Scam Message
+# Expected: risk_score > 80, risk_level: "Likely Scam"
+POST {{baseUrl}}/scan
+Content-Type: application/json
+X-Device-Fingerprint: {{fingerprint}}
+
+{
+  "text": "CONGRATULATIONS! You have won N5,000,000 in the UBA lottery. Send your BVN and N2,500 processing fee to claim your prize before midnight. Call 08012345678 now!",
+  "deviceFingerprint": "{{fingerprint}}"
+}
+
+
+### 3. Test a US Phishing Message (Global Test)
+# Expected: High risk, identifies "Logistics/Impersonation"
+POST {{baseUrl}}/scan
+Content-Type: application/json
+X-Device-Fingerprint: {{fingerprint}}
+
+{
+  "text": "USPS: Your package with ID US-9502-1 has a pending delivery fee of $1.99. Failure to pay will result in the package being returned to the sender. Click here: https://usps-fees-collect.com",
+  "deviceFingerprint": "{{fingerprint}}"
+}
+
+
+### 4. Check Usage/Rate Limit
+# Verifies the scansRemaining decreased
+GET {{baseUrl}}/scan/usage
+X-Device-Fingerprint: {{fingerprint}}

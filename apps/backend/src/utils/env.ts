@@ -41,6 +41,14 @@ const envSchema = z.object({
 
   // Subscription / Trial
   TRIAL_DURATION_DAYS: z.coerce.number().default(3),
+
+  // AI Configuration
+  AI_GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
+  AI_GEMINI_MAX_TOKENS: z.coerce.number().default(2048),
+  GROQ_API_KEY: z.string().optional(),
+  GROQ_MODEL: z.string().default("llama-3.3-70b-versatile"),
+  AI_TIMEOUT_MS: z.coerce.number().default(8000),
+  AI_MAX_INPUT_LENGTH: z.coerce.number().default(3000),
 });
 
 // Validate and throw early if configuration is broken

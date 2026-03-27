@@ -1,19 +1,100 @@
+// apps/backend/src/controllers/scan.controller.ts
+
 import type { Request, Response, NextFunction } from "express";
+import { detectionService } from "@/services/detection.service";
 import { rateLimitService } from "@/services/rateLimit.service";
+import { db } from "@/db";
+import { scans } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
 import { hashIp } from "@/utils/hash";
-import type { UsageSummary } from "@scamshieldlite/shared";
+import { requireAuth } from "@/middleware/requireAuth";
+import { InvalidInputError } from "@/utils/errors";
+import type {
+  ScanRequest,
+  ScanResponse,
+  UsageSummary,
+} from "@scamshieldlite/shared";
 
 export const scanController = {
+  /**
+   * POST /api/scan
+   * Runs the full detection pipeline.
+   * Rate limiting is enforced by rateLimitMiddleware (applied in the route).
+   */
   async analyze(req: Request, res: Response, next: NextFunction) {
-    // Implemented in Phase 5
-    res.status(501).json({ error: "Not yet implemented" });
+    try {
+      const body = req.body as ScanRequest;
+
+      if (!body?.text) {
+        throw new InvalidInputError("text field is required");
+      }
+
+      const result = await detectionService.run({
+        rawText: body.text,
+        userId: req.user?.id,
+        deviceFingerprint:
+          body.deviceFingerprint ??
+          (req.headers["x-device-fingerprint"] as string),
+        inputType: "text",
+      });
+
+      const rateLimitResult = req.rateLimitResult;
+
+      const response: ScanResponse = {
+        result: result.scanResult,
+        ...(result.scanId && { scanId: result.scanId }),
+        ...(rateLimitResult && {
+          scansRemaining: rateLimitResult.remaining,
+        }),
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
   },
 
+  /**
+   * GET /api/scan/history
+   * Returns the last 20 scans for the authenticated user.
+   */
   async getHistory(req: Request, res: Response, next: NextFunction) {
-    // Implemented in Phase 7
-    res.status(501).json({ error: "Not yet implemented" });
+    try {
+      // Inline auth check — will be middleware in Phase 7
+      if (!req.user) {
+        res
+          .status(401)
+          .json({ error: "Authentication required", code: "UNAUTHORIZED" });
+        return;
+      }
+
+      const history = await db.query.scans.findMany({
+        where: eq(scans.userId, req.user.id),
+        orderBy: [desc(scans.createdAt)],
+        limit: 20,
+        columns: {
+          id: true,
+          riskScore: true,
+          riskLevel: true,
+          scamType: true,
+          indicatorsDetected: true,
+          explanation: true,
+          recommendation: true,
+          createdAt: true,
+          // Deliberately excluded: scrubbedInput — don't send stored text back
+        },
+      });
+
+      res.json({ history });
+    } catch (error) {
+      next(error);
+    }
   },
 
+  /**
+   * GET /api/scan/usage
+   * Returns current scan usage without consuming a scan.
+   */
   async getUsage(req: Request, res: Response, next: NextFunction) {
     try {
       const ip =

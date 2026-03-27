@@ -18,6 +18,7 @@
   "packageManager": "pnpm@10.15.1",
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.5.5",
+    "@google/generative-ai": "^0.24.1",
     "@scamshieldlite/shared": "workspace:*",
     "@t3-oss/env-core": "^0.13.10",
     "better-auth": "^1.5.5",
@@ -27,6 +28,7 @@
     "drizzle-orm": "^0.45.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.1",
+    "groq-sdk": "^1.1.2",
     "helmet": "^8.1.0",
     "morgan": "^1.10.1",
     "pino": "^10.3.1",
