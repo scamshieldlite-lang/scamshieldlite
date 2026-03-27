@@ -1,29 +1,48 @@
 {
   "name": "mobile",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "src/index.ts",
   "scripts": {
+    "dev": "expo start",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@react-navigation/bottom-tabs": "^7.15.8",
     "@react-navigation/native": "^7.1.33",
     "@react-navigation/native-stack": "^7.14.5",
     "@scamshieldlite/shared": "workspace:*",
+    "axios": "^1.13.6",
     "better-auth": "^1.5.5",
-    "expo": "~55.0.7",
+    "expo": "~55.0.9",
+    "expo-application": "~55.0.10",
+    "expo-clipboard": "~55.0.9",
+    "expo-constants": "~55.0.9",
+    "expo-device": "~55.0.10",
+    "expo-notifications": "~55.0.14",
     "expo-secure-store": "~55.0.9",
     "expo-status-bar": "~55.0.4",
+    "lucide-react": "^1.7.0",
+    "lucide-react-native": "^1.7.0",
+    "nativewind": "^4.2.3",
     "react": "19.2.0",
+    "react-dom": "19.2.0",
     "react-native": "0.83.2",
+    "react-native-gesture-handler": "~2.30.0",
     "react-native-reanimated": "4.2.1",
     "react-native-safe-area-context": "~5.6.2",
-    "react-native-screens": "~4.23.0"
+    "react-native-screens": "~4.23.0",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
+    "@types/node": "^25.5.0",
+    "@types/react": "~19.2.14",
+    "@types/react-native": "^0.73.0",
+    "babel-plugin-module-resolver": "^5.0.3",
+    "tailwindcss": "^4.2.2",
     "typescript": "~5.9.2"
   },
   "private": true

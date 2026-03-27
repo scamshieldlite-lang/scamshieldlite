@@ -3,52 +3,97 @@ import React, {
   useContext,
   useEffect,
   useState,
+  useCallback,
   type ReactNode,
-} from 'react';
-import { authClient } from '../services/authClient';
-
-interface AuthUser {
-  id: string;
-  email: string;
-  name: string;
-}
+} from "react";
+import { authService } from "@/services/auth.service";
+import { storageService, StorageKey } from "@/services/storage.service";
+import type { AuthUser, AuthState } from "@scamshieldlite/shared/";
+import { logger } from "@/utils/logger";
 
 interface AuthContextValue {
   user: AuthUser | null;
+  authState: AuthState;
   isLoading: boolean;
-  isAuthenticated: boolean;
-  signOut: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  signUp: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  continueAsGuest: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data: session, isPending } = authClient.useSession();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authState, setAuthState] = useState<AuthState>("unauthenticated");
   const [isLoading, setIsLoading] = useState(true);
 
+  // On mount — restore session from SecureStore
   useEffect(() => {
-    if (!isPending) setIsLoading(false);
-  }, [isPending]);
+    restoreSession();
+  }, []);
 
-  const handleSignOut = async () => {
-    await authClient.signOut();
-  };
-
-  const user = session?.user
-    ? {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
+  async function restoreSession() {
+    try {
+      const token = await storageService.get(StorageKey.AUTH_TOKEN);
+      if (!token) {
+        setAuthState("unauthenticated");
+        return;
       }
-    : null;
+
+      const session = await authService.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        setAuthState("authenticated");
+        logger.info("Session restored for user:", session.user.id);
+      } else {
+        // Token invalid or expired
+        await storageService.clearAuthData();
+        setAuthState("unauthenticated");
+      }
+    } catch (error) {
+      logger.error("Session restore failed", error);
+      setAuthState("unauthenticated");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const login = useCallback(async (email: string, password: string) => {
+    const session = await authService.login({ email, password });
+    setUser(session.user);
+    setAuthState("authenticated");
+  }, []);
+
+  const signUp = useCallback(
+    async (name: string, email: string, password: string) => {
+      const session = await authService.signUp({ name, email, password });
+      setUser(session.user);
+      setAuthState("authenticated");
+    },
+    [],
+  );
+
+  const logout = useCallback(async () => {
+    await authService.logout();
+    setUser(null);
+    setAuthState("unauthenticated");
+  }, []);
+
+  const continueAsGuest = useCallback(() => {
+    setAuthState("guest");
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        authState,
         isLoading,
-        isAuthenticated: !!user,
-        signOut: handleSignOut,
+        login,
+        signUp,
+        logout,
+        continueAsGuest,
       }}
     >
       {children}
@@ -56,8 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth(): AuthContextValue {
+export function useAuthContext(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  if (!ctx) throw new Error("useAuthContext must be used within AuthProvider");
   return ctx;
 }
