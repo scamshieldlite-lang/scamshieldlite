@@ -1,14 +1,12 @@
-// apps/mobile/src/navigation/AppStack.tsx
-
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import BottomTabs from "./BottomTabs";
-import { ScanResultScreen } from "@/screens/scan/ScanResultScreen";
+import ScanResultScreen from "@/screens/scan/ScanResultScreen";
 import type { ScanResponse } from "@scamshieldlite/shared/";
 
 export type AppStackParamList = {
   MainTabs: undefined;
-  ScanResult: { result: ScanResponse };
+  ScanResult: { result: ScanResponse }; // Full ScanResponse, not just result field
 };
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -20,7 +18,10 @@ export default function AppStack() {
       <Stack.Screen
         name="ScanResult"
         component={ScanResultScreen}
-        options={{ presentation: "card" }}
+        options={{
+          presentation: "card",
+          animation: "slide_from_bottom",
+        }}
       />
     </Stack.Navigator>
   );

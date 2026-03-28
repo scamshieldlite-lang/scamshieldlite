@@ -44,3 +44,12 @@ export interface UsageSummary {
   scansRemaining: number;
   isGuest: boolean;
 }
+
+export interface RateLimitHeaders {
+  limit: number;
+  remaining: number;
+  resetAt: string; // ISO string
+  tier: string;
+}
+
+export type UserTier = "guest" | "trialing" | "paid" | "expired";

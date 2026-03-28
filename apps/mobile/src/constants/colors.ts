@@ -41,7 +41,7 @@ export type ColorKey = keyof typeof Colors;
  * Maps risk level string to the correct color set and specific gradients.
  * Perfect for the "Analysis Report" and "History" cards.
  */
-export function getRiskTheme(
+export function getRiskColors(
   riskLevel: "Likely Safe" | "Suspicious" | "Likely Scam",
 ) {
   switch (riskLevel) {

@@ -1,106 +1,200 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
+  RefreshControl,
+  TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { AppStackParamList } from "@/navigation/AppStack";
+import { useAuth } from "@/hooks/useAuth";
+import { useHistory } from "@/hooks/useHistory";
+import ScanCard from "@/components/ScanCard";
+import EmptyState from "@/components/EmptyState";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { Colors } from "@/constants/colors";
+import type { ScanResponse } from "@scamshieldlite/shared/";
+import { NormalizedHistoryItem } from "@/services/scan.service";
 
-interface HistoryItem {
+type NavProp = NativeStackNavigationProp<AppStackParamList>;
+
+interface HistoryItem extends ScanResponse {
   id: string;
-  title: string;
-  description: string;
-  timestamp: string;
-  status: "success" | "warning" | "error";
+  createdAt: string;
 }
 
-export const HistoryScreen: React.FC = () => {
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function HistoryScreen() {
+  const { authState } = useAuth();
+  const { items, isLoading, isRefreshing, error, fetch, refresh } =
+    useHistory();
+  const navigation = useNavigation<NavProp>();
+
+  const isAuthenticated = authState === "authenticated";
 
   useEffect(() => {
-    // TODO: Fetch history data from your API
-    loadHistory();
-  }, []);
-
-  const loadHistory = async () => {
-    try {
-      setLoading(true);
-      // Replace with actual API call
-      // const response = await fetch('/api/history');
-      // const data = await response.json();
-      // setHistory(data);
-      setHistory([]);
-    } catch (error) {
-      console.error("Failed to load history:", error);
-    } finally {
-      setLoading(false);
+    if (isAuthenticated) {
+      fetch();
     }
-  };
+  }, [isAuthenticated, fetch]);
 
-  const renderItem = ({ item }: { item: HistoryItem }) => (
-    <View style={styles.itemContainer}>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.description}>{item.description}</Text>
-      <Text style={styles.timestamp}>{item.timestamp}</Text>
-    </View>
+  const handleCardPress = useCallback(
+    (item: NormalizedHistoryItem) => {
+      // Reconstruct ScanResponse shape from normalized history item
+      navigation.navigate("ScanResult", {
+        result: {
+          result: item.result,
+          scanId: item.id,
+          // scansRemaining not available from history — omit
+        },
+      });
+    },
+    [navigation],
   );
 
-  if (loading) {
+  // ── Auth gate ──────────────────────────────────────────────────
+  if (!isAuthenticated) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>History</Text>
+        </View>
+        <EmptyState
+          title="Sign in to see your history"
+          subtitle="Your past scans are saved to your account. Create a free account to get started."
+          actionLabel="Create free account"
+          onAction={() => {
+            // Logging out drops to unauthenticated → AuthStack shows
+          }}
+        />
+      </SafeAreaView>
     );
   }
 
+  // ── Loading ────────────────────────────────────────────────────
+  if (isLoading && items.length === 0) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>History</Text>
+        </View>
+        <LoadingSpinner message="Loading your scans…" fullScreen />
+      </SafeAreaView>
+    );
+  }
+
+  // ── Error ──────────────────────────────────────────────────────
+  if (error && items.length === 0) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>History</Text>
+        </View>
+        <EmptyState
+          title="Couldn't load history"
+          subtitle={error}
+          actionLabel="Try again"
+          onAction={fetch}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // ── List ───────────────────────────────────────────────────────
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>History</Text>
+        <Text style={styles.count}>
+          {items.length} scan{items.length !== 1 ? "s" : ""}
+        </Text>
+      </View>
+
       <FlatList
-        data={history}
-        renderItem={renderItem}
+        data={items}
         keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <ScanCard
+            riskLevel={item.result.risk_level}
+            riskScore={item.result.risk_score}
+            scamType={item.result.scam_type}
+            explanation={item.result.explanation}
+            createdAt={item.createdAt}
+            onPress={() => handleCardPress(item)}
+          />
+        )}
+        contentContainerStyle={[
+          styles.listContent,
+          items.length === 0 && styles.listContentEmpty,
+        ]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refresh}
+            tintColor={Colors.primary}
+            colors={[Colors.primary]}
+          />
+        }
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No history available</Text>
+          <EmptyState
+            title="No scans yet"
+            subtitle="Paste a suspicious message on the Scan tab to analyze it. Your results will appear here."
+          />
+        }
+        ListFooterComponent={
+          items.length > 0 ? (
+            <Text style={styles.footer}>
+              Showing last {items.length} scan
+              {items.length !== 1 ? "s" : ""}
+            </Text>
+          ) : null
         }
       />
-    </View>
+    </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.background,
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: "center",
+  titleRow: {
+    flexDirection: "row",
     alignItems: "center",
-  },
-  itemContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Colors.border,
   },
   title: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
+    fontSize: 26,
+    fontWeight: "700",
+    color: Colors.textPrimary,
   },
-  description: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 8,
+  count: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    fontWeight: "500",
   },
-  timestamp: {
-    fontSize: 12,
-    color: "#999",
+  listContent: {
+    padding: 16,
+    paddingBottom: 40,
   },
-  emptyText: {
+  listContentEmpty: {
+    flex: 1,
+  },
+  footer: {
     textAlign: "center",
-    marginTop: 20,
-    color: "#999",
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 8,
+    paddingBottom: 8,
   },
 });

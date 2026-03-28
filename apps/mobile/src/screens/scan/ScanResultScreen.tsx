@@ -1,158 +1,251 @@
-import React, { useEffect, useState } from "react";
-import { useRoute, useNavigation } from "@react-navigation/native";
-
+import React, { useCallback, useRef } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
+  StyleSheet,
+  Share,
+  Animated as RNAnimated,
 } from "react-native";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { AppStackParamList } from "@/navigation/AppStack";
+import { useAuth } from "@/hooks/useAuth";
 
-interface ScanResult {
-  id: string;
-  url: string;
-  riskLevel: "safe" | "warning" | "dangerous";
-  timestamp: string;
-  details: string;
-}
+import RiskHeader from "@/components/RiskHeader";
+import RiskMeter from "@/components/RiskMeter";
+import IndicatorChip from "@/components/IndicatorChip";
+import InfoCard from "@/components/InfoCard";
+import ScoreContextBar from "@/components/ScoreContextBar";
+import SafeResultContent from "@/components/SafeResultContent";
+import { Colors, getRiskColors } from "@/constants/colors";
 
-export const ScanResultScreen: React.FC = () => {
-  const route = useRoute();
-  const navigation = useNavigation();
-  const [result, setResult] = useState<ScanResult | null>(null);
-  const [loading, setLoading] = useState(true);
+type Props = NativeStackScreenProps<AppStackParamList, "ScanResult">;
 
-  useEffect(() => {
-    const params = route.params as { scanResult: ScanResult } | undefined;
-    if (params?.scanResult) {
-      setResult(params.scanResult);
+export default function ScanResultScreen({ navigation, route }: Props) {
+  const { result } = route.params;
+  const { authState } = useAuth();
+  const isGuest = authState === "guest";
+
+  const {
+    risk_level,
+    risk_score,
+    scam_type,
+    indicators_detected,
+    explanation,
+    recommendation,
+  } = result.result;
+
+  const isSafe = risk_level === "Likely Safe";
+  const { color: primary } = getRiskColors(risk_level);
+
+  const handleShare = useCallback(async () => {
+    try {
+      await Share.share({
+        message:
+          `🛡️ ScamShieldLite Analysis\n\n` +
+          `Result: ${risk_level} (${risk_score}/100)\n` +
+          (scam_type ? `Type: ${scam_type}\n` : "") +
+          `\n${explanation}\n\n` +
+          `What to do: ${recommendation}\n\n` +
+          `Analyzed with ScamShieldLite`,
+      });
+    } catch {
+      // User cancelled share — silent
     }
-    setLoading(false);
-  }, [route.params]);
+  }, [risk_level, risk_score, scam_type, explanation, recommendation]);
 
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case "safe":
-        return "#4CAF50";
-      case "warning":
-        return "#FFC107";
-      case "dangerous":
-        return "#F44336";
-      default:
-        return "#9E9E9E";
-    }
-  };
+  const handleBack = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0066CC" />
-      </View>
-    );
-  }
+  const handleScanAgain = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
 
-  if (!result) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>No scan result available</Text>
-      </View>
-    );
-  }
+  const handleReport = useCallback(() => {
+    // Phase 9 — wired up then
+  }, []);
 
   return (
-    <ScrollView style={styles.container}>
-      <View
-        style={[
-          styles.riskBadge,
-          { backgroundColor: getRiskColor(result.riskLevel) },
-        ]}
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        stickyHeaderIndices={[0]}
       >
-        <Text style={styles.riskText}>{result.riskLevel.toUpperCase()}</Text>
+        {/* Sticky risk header */}
+        <RiskHeader
+          riskLevel={risk_level}
+          riskScore={risk_score}
+          scamType={scam_type ?? ""}
+          onBack={handleBack}
+          onShare={handleShare}
+        />
+
+        {/* Body */}
+        <View style={styles.body}>
+          {/* Safe variant — calming layout */}
+          {isSafe && (
+            <SafeResultContent
+              explanation={explanation}
+              recommendation={recommendation}
+            />
+          )}
+
+          {/* Warning/Scam variant */}
+          {!isSafe && (
+            <>
+              {/* Indicators section */}
+              {indicators_detected.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>
+                    Indicators detected ({indicators_detected.length})
+                  </Text>
+                  <View style={styles.chipGrid}>
+                    {indicators_detected.map((indicator, i) => (
+                      <IndicatorChip
+                        key={i}
+                        label={indicator}
+                        riskLevel={risk_level}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Explanation */}
+              <InfoCard
+                label="What this means"
+                content={explanation}
+                icon="📋"
+              />
+
+              {/* Recommendation */}
+              <InfoCard
+                label="What to do"
+                content={recommendation}
+                icon="✅"
+                accentColor={Colors.primary}
+              />
+            </>
+          )}
+
+          {/* Score context bar — always shown */}
+          <ScoreContextBar
+            score={risk_score}
+            riskLevel={risk_level}
+            scansRemaining={result.scansRemaining}
+            isGuest={isGuest}
+          />
+
+          {/* Disclaimer */}
+          <Text style={styles.disclaimer}>
+            AI-assisted analysis. Always verify with trusted sources before
+            making any decisions.
+          </Text>
+        </View>
+      </ScrollView>
+
+      {/* Fixed footer actions */}
+      <View style={styles.footer}>
+        {!isSafe && (
+          <TouchableOpacity
+            style={styles.reportButton}
+            onPress={handleReport}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.reportButtonText}>🚩 Report as scam</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.scanAgainButton}
+          onPress={handleScanAgain}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.scanAgainText}>↩ Scan another message</Text>
+        </TouchableOpacity>
       </View>
-
-      <View style={styles.content}>
-        <Text style={styles.label}>URL Scanned:</Text>
-        <Text style={styles.url}>{result.url}</Text>
-
-        <Text style={styles.label}>Details:</Text>
-        <Text style={styles.details}>{result.details}</Text>
-
-        <Text style={styles.label}>Timestamp:</Text>
-        <Text style={styles.timestamp}>
-          {new Date(result.timestamp).toLocaleString()}
-        </Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={styles.buttonText}>Back to Scan</Text>
-      </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
-    padding: 16,
+    backgroundColor: Colors.background,
   },
-  riskBadge: {
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 20,
+  scroll: {
+    flex: 1,
   },
-  riskText: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
+  scrollContent: {
+    paddingBottom: 120,
   },
-  content: {
-    backgroundColor: "#FFF",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
+  body: {
+    padding: 20,
+    gap: 16,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginTop: 12,
-    marginBottom: 4,
+  section: {
+    gap: 10,
   },
-  url: {
-    fontSize: 14,
-    color: "#0066CC",
-    marginBottom: 12,
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
-  details: {
-    fontSize: 14,
-    color: "#666",
-    lineHeight: 20,
+  chipGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
-  timestamp: {
-    fontSize: 12,
-    color: "#999",
-  },
-  button: {
-    backgroundColor: "#0066CC",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  errorText: {
-    fontSize: 16,
-    color: "#F44336",
+  disclaimer: {
+    fontSize: 11,
+    color: Colors.textMuted,
     textAlign: "center",
+    lineHeight: 16,
+    paddingHorizontal: 12,
+    paddingTop: 4,
+  },
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.background,
+    borderTopWidth: 0.5,
+    borderTopColor: Colors.border,
+    padding: 16,
+    paddingBottom: 32,
+    gap: 10,
+  },
+  reportButton: {
+    borderWidth: 0.5,
+    borderColor: Colors.scam + "55",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    backgroundColor: Colors.scam + "0e",
+  },
+  reportButtonText: {
+    color: Colors.scam,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  scanAgainButton: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  scanAgainText: {
+    color: Colors.textSecondary,
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

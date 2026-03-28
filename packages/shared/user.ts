@@ -1,4 +1,4 @@
-export type AuthState = "guest" | "authenticated";
+export type AuthState = "guest" | "authenticated" | "unauthenticated";
 
 export interface AuthUser {
   id: string;
