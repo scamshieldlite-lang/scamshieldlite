@@ -6,7 +6,10 @@ import type { ScanResponse } from "@scamshieldlite/shared/";
 
 export type AppStackParamList = {
   MainTabs: undefined;
-  ScanResult: { result: ScanResponse }; // Full ScanResponse, not just result field
+  ScanResult: {
+    result: ScanResponse;
+    originalText: string; // ← added — needed for report submission
+  };
 };
 
 const Stack = createNativeStackNavigator<AppStackParamList>();

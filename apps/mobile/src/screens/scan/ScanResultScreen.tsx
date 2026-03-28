@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -19,12 +19,26 @@ import InfoCard from "@/components/InfoCard";
 import ScoreContextBar from "@/components/ScoreContextBar";
 import SafeResultContent from "@/components/SafeResultContent";
 import { Colors, getRiskColors } from "@/constants/colors";
+import { useReport } from "@/hooks/useReport";
+import ReportSheet from "@/components/ReportSheet";
+import ReportSuccess from "@/components/ReportSuccess";
+import type { ReportCategory } from "@scamshieldlite/shared/";
 
 type Props = NativeStackScreenProps<AppStackParamList, "ScanResult">;
 
 export default function ScanResultScreen({ navigation, route }: Props) {
   const { result } = route.params;
   const { authState } = useAuth();
+  const {
+    state: reportState,
+    message: reportMessage,
+    error: reportError,
+    submit: submitReport,
+    reset: resetReport,
+  } = useReport();
+
+  const [showReportSheet, setShowReportSheet] = useState(false);
+
   const isGuest = authState === "guest";
 
   const {
@@ -64,8 +78,21 @@ export default function ScanResultScreen({ navigation, route }: Props) {
   }, [navigation]);
 
   const handleReport = useCallback(() => {
-    // Phase 9 — wired up then
+    setShowReportSheet(true);
   }, []);
+
+  const handleReportSubmit = useCallback(
+    async (category: ReportCategory, comment?: string) => {
+      // route.params.originalText is now available from Phase 7 update
+      await submitReport(result, route.params.originalText, category, comment);
+      setShowReportSheet(false);
+    },
+    [result, route.params.originalText, submitReport],
+  );
+
+  const handleReportSuccessDismiss = useCallback(() => {
+    resetReport();
+  }, [resetReport]);
 
   return (
     <View style={styles.root}>
@@ -153,11 +180,23 @@ export default function ScanResultScreen({ navigation, route }: Props) {
       <View style={styles.footer}>
         {!isSafe && (
           <TouchableOpacity
-            style={styles.reportButton}
-            onPress={handleReport}
-            activeOpacity={0.75}
+            style={[
+              styles.reportButton,
+              reportState === "success" && styles.reportButtonSubmitted,
+            ]}
+            onPress={reportState === "success" ? undefined : handleReport}
+            activeOpacity={reportState === "success" ? 1 : 0.75}
           >
-            <Text style={styles.reportButtonText}>🚩 Report as scam</Text>
+            <Text
+              style={[
+                styles.reportButtonText,
+                reportState === "success" && styles.reportButtonTextSubmitted,
+              ]}
+            >
+              {reportState === "success"
+                ? "✅  Reported — thank you"
+                : "🚩  Report as scam"}
+            </Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -168,6 +207,21 @@ export default function ScanResultScreen({ navigation, route }: Props) {
           <Text style={styles.scanAgainText}>↩ Scan another message</Text>
         </TouchableOpacity>
       </View>
+      {/* Report sheet */}
+      <ReportSheet
+        visible={showReportSheet}
+        initialCategory={risk_level !== "Likely Safe" ? scam_type : undefined}
+        onSubmit={handleReportSubmit}
+        onDismiss={() => setShowReportSheet(false)}
+        isLoading={reportState === "loading"}
+      />
+
+      {/* Report success */}
+      <ReportSuccess
+        visible={reportState === "success"}
+        message={reportMessage ?? "Thank you for your report."}
+        onDismiss={handleReportSuccessDismiss}
+      />
     </View>
   );
 }
@@ -234,6 +288,13 @@ const styles = StyleSheet.create({
     color: Colors.scam,
     fontSize: 14,
     fontWeight: "600",
+  },
+  reportButtonSubmitted: {
+    borderColor: Colors.safe + "55",
+    backgroundColor: Colors.safe + "0e",
+  },
+  reportButtonTextSubmitted: {
+    color: Colors.safe,
   },
   scanAgainButton: {
     backgroundColor: Colors.surface,

@@ -80,9 +80,14 @@ export default function ScanInputScreen({ navigation }: Props) {
   const handleAnalyze = useCallback(async () => {
     if (!canSubmit) return;
 
-    const result = await scan(text.trim());
+    const trimmed = text.trim();
+    const result = await scan(trimmed);
+
     if (result) {
-      navigation.navigate("ScanResult", { result });
+      navigation.navigate("ScanResult", {
+        result,
+        originalText: trimmed, // ← pass original text
+      });
     }
   }, [canSubmit, scan, text, navigation]);
 

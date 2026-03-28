@@ -31,6 +31,7 @@ export const Colors = {
 
   // 🛠️ Utility
   border: "rgba(160, 174, 192, 0.1)",
+  borderLight: "rgba(160, 174, 192, 0.05)",
   white: "#FFFFFF",
   transparent: "transparent",
 } as const;
