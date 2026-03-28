@@ -1,208 +1,342 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
+  StyleSheet,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  User,
-  Mail,
-  ShieldCheck,
-  LogOut,
-  ChevronRight,
-  CreditCard,
-  Settings,
-} from "lucide-react-native";
 import { useAuth } from "@/hooks/useAuth";
+import { useScanUsage } from "@/hooks/useScanUsage";
+import AuthGuard from "@/components/AuthGuard";
 import { Colors } from "@/constants/colors";
+import { UserIcon } from "lucide-react-native";
 
+// ── Info row — reusable within this screen ────────────────────────
+interface InfoRowProps {
+  label: string;
+  value: string;
+  valueColor?: string;
+}
+
+function InfoRow({ label, value, valueColor }: InfoRowProps) {
+  return (
+    <View style={infoStyles.row}>
+      <Text style={infoStyles.label}>{label}</Text>
+      <Text
+        style={[
+          infoStyles.value,
+          valueColor ? { color: valueColor } : undefined,
+        ]}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+const infoStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Colors.border,
+  },
+  label: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  value: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    maxWidth: "55%",
+    textAlign: "right",
+  },
+});
+
+// ── Section header ────────────────────────────────────────────────
+function SectionHeader({ title }: { title: string }) {
+  return <Text style={sectionStyles.header}>{title}</Text>;
+}
+
+const sectionStyles = StyleSheet.create({
+  header: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+});
+
+// ── Main screen ───────────────────────────────────────────────────
 export default function AccountScreen() {
-  const { authState, user, logout } = useAuth();
-  const isGuest = authState === "guest";
+  const { user, logout, authState } = useAuth();
+  const { usage } = useScanUsage();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to log out?", [
+  const handleLogout = useCallback(() => {
+    Alert.alert("Log out", "Are you sure you want to log out?", [
       { text: "Cancel", style: "cancel" },
-      { text: "Logout", style: "destructive", onPress: logout },
+      {
+        text: "Log out",
+        style: "destructive",
+        onPress: async () => {
+          setIsLoggingOut(true);
+          try {
+            await logout();
+          } finally {
+            setIsLoggingOut(false);
+          }
+        },
+      },
     ]);
-  };
+  }, [logout]);
+
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      "Delete account",
+      "This will permanently delete your account and all scan history. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete account",
+          style: "destructive",
+          onPress: () => {
+            // Phase 11 — full implementation with API call
+            Alert.alert(
+              "Coming soon",
+              "Account deletion will be available in a future update. Contact support to delete your account.",
+            );
+          },
+        },
+      ],
+    );
+  }, []);
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.header}>Account</Text>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Account</Text>
+      </View>
 
-        {/* Profile Header */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarCircle}>
-            <User color={Colors.primary} size={32} />
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.userName}>
-              {isGuest ? "Guest User" : user?.name || "Member"}
-            </Text>
-            <Text style={styles.userEmail}>
-              {isGuest ? "Sign in to sync history" : user?.email}
-            </Text>
-          </View>
-        </View>
-
-        {/* Subscription / Usage Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Plan & Usage</Text>
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIcon}>
-              <ShieldCheck color={Colors.primary} size={20} />
-            </View>
-            <View style={styles.menuTextContent}>
-              <Text style={styles.menuTitle}>Current Plan</Text>
-              <Text style={styles.menuSub}>
-                {isGuest ? "Free Tier" : "Pro Member"}
-              </Text>
-            </View>
-            <ChevronRight color={Colors.textMuted} size={18} />
-          </TouchableOpacity>
-
-          {!isGuest && (
-            <TouchableOpacity style={styles.menuItem}>
-              <View style={styles.menuIcon}>
-                <CreditCard color={Colors.primary} size={20} />
+      {/* AuthGuard wraps the authenticated content */}
+      <AuthGuard message="Sign in to manage your account and subscription.">
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Profile section */}
+          <SectionHeader title="Profile" />
+          <View style={styles.card}>
+            {/* Avatar */}
+            <View style={styles.avatarRow}>
+              <View style={styles.avatar}>
+                {user?.name ? (
+                  <Text style={styles.avatarText}>
+                    {user.name.charAt(0).toUpperCase()}
+                  </Text>
+                ) : (
+                  <UserIcon color={Colors.primary} size={24} />
+                )}
               </View>
-              <Text style={styles.menuTitle}>Billing & Subscription</Text>
-              <ChevronRight color={Colors.textMuted} size={18} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* App Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Preferences</Text>
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIcon}>
-              <Settings color={Colors.textSecondary} size={20} />
+              <View style={styles.avatarInfo}>
+                <Text style={styles.userName}>{user?.name ?? "Unknown"}</Text>
+                <Text style={styles.userEmail}>{user?.email ?? ""}</Text>
+              </View>
             </View>
-            <Text style={styles.menuTitle}>Notification Settings</Text>
-            <ChevronRight color={Colors.textMuted} size={18} />
-          </TouchableOpacity>
-        </View>
+          </View>
 
-        {/* Auth Actions */}
-        <View style={styles.footer}>
-          {isGuest ? (
-            <TouchableOpacity style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>Create Free Account</Text>
-            </TouchableOpacity>
-          ) : (
+          {/* Usage section */}
+          <SectionHeader title="Usage today" />
+          <View style={styles.card}>
+            {usage && (
+              <View style={styles.progressBarContainer}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: `${(usage.scansToday / usage.scanLimit) * 100}%`,
+                      backgroundColor:
+                        usage.scansRemaining <= 1
+                          ? Colors.scam
+                          : Colors.primary,
+                    },
+                  ]}
+                />
+              </View>
+            )}
+          </View>
+          {/* Subscription section */}
+          <SectionHeader title="Subscription" />
+          <View style={styles.card}>
+            <InfoRow
+              label="Current plan"
+              value={usage?.isGuest ? "Guest" : "Free trial"}
+              valueColor={Colors.primary}
+            />
+            <InfoRow label="Status" value="Active" valueColor={Colors.safe} />
+            {/* Subscribe button — Phase 11 */}
             <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleLogout}
+              style={styles.subscribeButton}
+              onPress={() =>
+                Alert.alert(
+                  "Coming soon",
+                  "Subscription management will be available in Phase 11.",
+                )
+              }
             >
-              <LogOut color={Colors.scam} size={20} />
-              <Text style={styles.logoutText}>Sign Out</Text>
+              <Text style={styles.subscribeButtonText}>⭐ Upgrade to Pro</Text>
             </TouchableOpacity>
-          )}
-          <Text style={styles.versionText}>ScamShieldLite v1.0.0</Text>
-        </View>
-      </ScrollView>
+          </View>
+
+          {/* Account actions */}
+          <SectionHeader title="Account" />
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={handleLogout}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? (
+                <ActivityIndicator size="small" color={Colors.scam} />
+              ) : (
+                <Text style={styles.actionTextDanger}>Log out</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Danger zone */}
+          <SectionHeader title="Danger zone" />
+          <View style={[styles.card, styles.dangerCard]}>
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={handleDeleteAccount}
+            >
+              <Text style={styles.actionTextDanger}>Delete account</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* App info */}
+          <Text style={styles.appVersion}>ScamShieldLite v1.0.0</Text>
+        </ScrollView>
+      </AuthGuard>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
     backgroundColor: Colors.background,
   },
-  scrollView: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
-  header: {
-    fontSize: 28,
+  titleRow: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Colors.border,
+  },
+  title: {
+    fontSize: 26,
     fontWeight: "700",
-    marginBottom: 24,
     color: Colors.textPrimary,
   },
-  profileCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surface,
+  content: {
     padding: 20,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 24,
+    paddingBottom: 48,
+    gap: 8,
   },
-  avatarCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.primary + "15",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  profileInfo: { flex: 1 },
-  userName: { fontSize: 18, fontWeight: "700", color: Colors.textPrimary },
-  userEmail: { fontSize: 14, color: Colors.textMuted, marginTop: 2 },
-  section: { marginBottom: 24 },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: Colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 12,
-    marginLeft: 4,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
+  card: {
     backgroundColor: Colors.surface,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 8,
+    borderRadius: 14,
     borderWidth: 0.5,
     borderColor: Colors.border,
+    paddingHorizontal: 16,
+    overflow: "hidden",
   },
-  menuIcon: { marginRight: 12 },
-  menuTextContent: { flex: 1 },
-  menuTitle: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "500",
-    color: Colors.textPrimary,
-  },
-  menuSub: { fontSize: 12, color: Colors.textMuted, marginTop: 1 },
-  footer: { marginTop: 12, gap: 16 },
-  primaryButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: "center",
-  },
-  primaryButtonText: { color: Colors.white, fontWeight: "700", fontSize: 16 },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 16,
-    borderRadius: 16,
-    borderWidth: 1,
+  dangerCard: {
     borderColor: Colors.scam + "44",
   },
-  logoutText: { color: Colors.scam, fontWeight: "700", fontSize: 16 },
-  versionText: {
-    textAlign: "center",
-    color: Colors.textMuted,
+  progressBarContainer: {
+    height: 6,
+    backgroundColor: Colors.border,
+    borderRadius: 3,
+    marginTop: 4,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 3,
+  },
+  avatarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 16,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.primary + "33",
+    borderWidth: 1.5,
+    borderColor: Colors.primary + "55",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
+  avatarInfo: { gap: 2 },
+  userName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
+  userEmail: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  loader: {
+    paddingVertical: 16,
+  },
+  subscribeButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginVertical: 12,
+  },
+  subscribeButtonText: {
+    color: Colors.white,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  actionRow: {
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  actionTextDanger: {
+    color: Colors.scam,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  appVersion: {
     fontSize: 12,
+    color: Colors.textMuted,
+    textAlign: "center",
     marginTop: 8,
   },
 });

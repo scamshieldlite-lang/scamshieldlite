@@ -32,6 +32,17 @@ export const auth = betterAuth({
     autoSignIn: true,
   },
 
+  emailVerification: {
+    sendOnSignUp: false, // Enable in production with an email provider
+    autoSignInAfterVerification: true,
+  },
+
+  onAPIError: {
+    onError: (error, ctx) => {
+      logger.error({ error, ctx }, "Better Auth API error");
+    },
+  },
+
   hooks: {
     // Change this from an array to a single middleware call
     after: createAuthMiddleware(async (ctx) => {

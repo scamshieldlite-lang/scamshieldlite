@@ -19,6 +19,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { Colors } from "@/constants/colors";
 import type { ScanResponse } from "@scamshieldlite/shared/";
 import { NormalizedHistoryItem } from "@/services/scan.service";
+import AuthGuard from "@/components/AuthGuard";
 
 type NavProp = NativeStackNavigationProp<AppStackParamList>;
 
@@ -50,6 +51,7 @@ export default function HistoryScreen() {
           scanId: item.id,
           // scansRemaining not available from history — omit
         },
+        originalText: item.result.explanation, // No original text stored in history, but explanation can provide context
       });
     },
     [navigation],
@@ -61,15 +63,70 @@ export default function HistoryScreen() {
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.titleRow}>
           <Text style={styles.title}>History</Text>
+          {items.length > 0 && (
+            <Text style={styles.count}>
+              {items.length} scan{items.length !== 1 ? "s" : ""}
+            </Text>
+          )}
         </View>
-        <EmptyState
-          title="Sign in to see your history"
-          subtitle="Your past scans are saved to your account. Create a free account to get started."
-          actionLabel="Create free account"
-          onAction={() => {
-            // Logging out drops to unauthenticated → AuthStack shows
-          }}
-        />
+
+        <AuthGuard message="Sign in to view your scan history and keep track of threats.">
+          {/* Loading */}
+          {isLoading && items.length === 0 ? (
+            <LoadingSpinner message="Loading your scans…" fullScreen />
+          ) : error && items.length === 0 ? (
+            /* Error */
+            <EmptyState
+              title="Couldn't load history"
+              subtitle={error}
+              actionLabel="Try again"
+              onAction={fetch}
+            />
+          ) : (
+            /* List */
+            <FlatList
+              data={items}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <ScanCard
+                  riskLevel={item.result.risk_level}
+                  riskScore={item.result.risk_score}
+                  scamType={item.result.scam_type}
+                  explanation={item.result.explanation}
+                  createdAt={item.createdAt}
+                  onPress={() => handleCardPress(item)}
+                />
+              )}
+              contentContainerStyle={[
+                styles.listContent,
+                items.length === 0 && styles.listContentEmpty,
+              ]}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={isRefreshing}
+                  onRefresh={refresh}
+                  tintColor={Colors.primary}
+                  colors={[Colors.primary]}
+                />
+              }
+              ListEmptyComponent={
+                <EmptyState
+                  title="No scans yet"
+                  subtitle="Paste a suspicious message on the Scan tab to analyze it."
+                />
+              }
+              ListFooterComponent={
+                items.length > 0 ? (
+                  <Text style={styles.footer}>
+                    Showing last {items.length} scan
+                    {items.length !== 1 ? "s" : ""}
+                  </Text>
+                ) : null
+              }
+            />
+          )}
+        </AuthGuard>
       </SafeAreaView>
     );
   }

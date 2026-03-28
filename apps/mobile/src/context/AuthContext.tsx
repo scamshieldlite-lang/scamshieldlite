@@ -5,11 +5,13 @@ import React, {
   useState,
   useCallback,
   type ReactNode,
+  useRef,
 } from "react";
 import { authService } from "@/services/auth.service";
 import { storageService, StorageKey } from "@/services/storage.service";
 import type { AuthUser, AuthState } from "@scamshieldlite/shared/";
 import { logger } from "@/utils/logger";
+import { AppState, type AppStateStatus } from "react-native";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -28,10 +30,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>("unauthenticated");
   const [isLoading, setIsLoading] = useState(true);
 
+  const lastValidation = useRef(Date.now());
+
   // On mount — restore session from SecureStore
   useEffect(() => {
     restoreSession();
   }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextState: AppStateStatus) => {
+        const now = Date.now();
+        // Only re-validate if it's been more than 5 minutes since the last check
+        const shouldCheck = now - lastValidation.current > 5 * 60 * 1000;
+        if (
+          nextState === "active" &&
+          authState === "authenticated" &&
+          shouldCheck
+        ) {
+          lastValidation.current = now;
+          authService.getSession().then((session) => {
+            if (!session?.user) {
+              // Session expired while app was in background
+              logger.warn("Session expired in background — logging out");
+              storageService.clearAuthData();
+              setUser(null);
+              setAuthState("unauthenticated");
+            }
+          });
+        }
+      },
+    );
+
+    return () => subscription.remove();
+  }, [authState]);
 
   async function restoreSession() {
     try {
