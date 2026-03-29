@@ -2,7 +2,7 @@ import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import BottomTabs from "./BottomTabs";
 import ScanResultScreen from "@/screens/scan/ScanResultScreen";
-import type { ScanResponse } from "@scamshieldlite/shared/";
+import type { InputType, ScanResponse } from "@scamshieldlite/shared/";
 import PaywallScreen from "@/screens/subscription/PaywallScreen";
 
 export type AppStackParamList = {
@@ -10,6 +10,7 @@ export type AppStackParamList = {
   ScanResult: {
     result: ScanResponse;
     originalText: string; // ← added — needed for report submission
+    inputType?: InputType; // ← add — "text" | "screenshot"
   };
   Paywall: undefined;
 };

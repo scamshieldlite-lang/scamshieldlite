@@ -98,6 +98,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@react-native-ml-kit/text-recognition':
+        specifier: ^2.0.0
+        version: 2.0.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
       '@react-navigation/bottom-tabs':
         specifier: ^7.15.8
         version: 7.15.8(@react-navigation/native@7.2.2(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native-safe-area-context@5.6.2(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native-screens@4.23.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
@@ -131,6 +134,12 @@ importers:
       expo-device:
         specifier: ~55.0.10
         version: 55.0.10(expo@55.0.9)
+      expo-image-manipulator:
+        specifier: ~55.0.11
+        version: 55.0.11(expo@55.0.9)
+      expo-image-picker:
+        specifier: ~55.0.14
+        version: 55.0.14(expo@55.0.9)
       expo-notifications:
         specifier: ~55.0.14
         version: 55.0.14(expo@55.0.9)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
@@ -1489,6 +1498,12 @@ packages:
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
 
+  '@react-native-ml-kit/text-recognition@2.0.0':
+    resolution: {integrity: sha512-RHefLYKndSyoDtgqHQptYQe+mftFk6/H30IQDenKX7PgMlJqoDejX+HdZ8gnP1kVNAt3iH+wyl/P6vCOkLMW9Q==}
+    peerDependencies:
+      react: '>=16.8.1'
+      react-native: '>=0.60.0-rc.0 <1.0.x'
+
   '@react-native/assets-registry@0.83.2':
     resolution: {integrity: sha512-9I5l3pGAKnlpQ15uVkeB9Mgjvt3cZEaEc8EDtdexvdtZvLSjtwBzgourrOW4yZUijbjJr8h3YO2Y0q+THwUHTA==}
     engines: {node: '>= 20.19.4'}
@@ -2565,6 +2580,21 @@ packages:
       expo: '*'
       react: '*'
       react-native: '*'
+
+  expo-image-loader@55.0.0:
+    resolution: {integrity: sha512-NOjp56wDrfuA5aiNAybBIjqIn1IxKeGJ8CECWZncQ/GzjZfyTYAHTCyeApYkdKkMBLHINzI4BbTGSlbCa0fXXQ==}
+    peerDependencies:
+      expo: '*'
+
+  expo-image-manipulator@55.0.11:
+    resolution: {integrity: sha512-90Bgk3nSRRBCmfqUiB9KTj8v9TsjGI7RPESDN3nBXGB+rTunSpie0qB2FUY2vebpxoDTrfvAyz3pSskDMJYWxQ==}
+    peerDependencies:
+      expo: '*'
+
+  expo-image-picker@55.0.14:
+    resolution: {integrity: sha512-qiloh0DY2JiS86wVT0f7Oe8n2Js65wZMQb0X5lJK1mH1wk8UqWlfqgMSF75ZKODtJAkYwO7m+fy5drGt0cEQng==}
+    peerDependencies:
+      expo: '*'
 
   expo-keep-awake@55.0.4:
     resolution: {integrity: sha512-vwfdMtMS5Fxaon8gC0AiE70SpxTsHJ+rjeoVJl8kdfdbxczF7OIaVmfjFJ5Gfigd/WZiLqxhfZk34VAkXF4PNg==}
@@ -5869,6 +5899,11 @@ snapshots:
 
   '@pinojs/redact@0.4.0': {}
 
+  '@react-native-ml-kit/text-recognition@2.0.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)':
+    dependencies:
+      react: 19.2.0
+      react-native: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)
+
   '@react-native/assets-registry@0.83.2': {}
 
   '@react-native/babel-plugin-codegen@0.83.4(@babel/core@7.29.0)':
@@ -7046,6 +7081,20 @@ snapshots:
       fontfaceobserver: 2.3.0
       react: 19.2.0
       react-native: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)
+
+  expo-image-loader@55.0.0(expo@55.0.9):
+    dependencies:
+      expo: 55.0.9(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+
+  expo-image-manipulator@55.0.11(expo@55.0.9):
+    dependencies:
+      expo: 55.0.9(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+      expo-image-loader: 55.0.0(expo@55.0.9)
+
+  expo-image-picker@55.0.14(expo@55.0.9):
+    dependencies:
+      expo: 55.0.9(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+      expo-image-loader: 55.0.0(expo@55.0.9)
 
   expo-keep-awake@55.0.4(expo@55.0.9)(react@19.2.0):
     dependencies:

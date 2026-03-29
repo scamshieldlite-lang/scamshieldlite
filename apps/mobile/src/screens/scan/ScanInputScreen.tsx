@@ -8,7 +8,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,12 +17,17 @@ import type { AppStackParamList } from "@/navigation/AppStack";
 import type { BottomTabParamList } from "@/navigation/BottomTabs";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+
 import { useScanner } from "@/hooks/useScanner";
 import { useAuth } from "@/hooks/useAuth";
 import { useScanUsage } from "@/hooks/useScanUsage";
+
 import UsageBadge from "@/components/UsageBadge";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import UpgradePrompt from "@/components/UpgradePrompt";
+import InputModeTabs, { type InputMode } from "@/components/InputModeTabs";
+import ScreenshotInput from "@/components/ScreenshotInput";
+
 import { Colors } from "@/constants/colors";
 import { INPUT_LIMITS } from "@/constants/limits";
 
@@ -33,6 +37,7 @@ type Props = CompositeScreenProps<
 >;
 
 export default function ScanInputScreen({ navigation }: Props) {
+  const [inputMode, setInputMode] = useState<InputMode>("text");
   const [text, setText] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const inputRef = useRef<TextInput>(null);
@@ -49,25 +54,31 @@ export default function ScanInputScreen({ navigation }: Props) {
     charCount <= INPUT_LIMITS.MAX_LENGTH &&
     !isLoading;
 
-  // Show upgrade modal automatically when rate limited
   useEffect(() => {
-    if (isRateLimited) {
-      setShowUpgradeModal(true);
-    }
+    if (isRateLimited) setShowUpgradeModal(true);
   }, [isRateLimited]);
 
-  const handlePaste = useCallback(async () => {
-    try {
-      const content = await Clipboard.getStringAsync();
-      if (content) {
-        setText(content.slice(0, INPUT_LIMITS.MAX_LENGTH));
-        clearError();
-        inputRef.current?.focus();
-      } else {
-        Alert.alert("Nothing to paste", "Your clipboard is empty.");
+  // Shared scan trigger — used by both text and screenshot paths
+  const triggerScan = useCallback(
+    async (textToScan: string, type: InputMode = "text") => {
+      const result = await scan(textToScan.trim());
+      if (result) {
+        navigation.navigate("ScanResult", {
+          result,
+          originalText: textToScan.trim(),
+          inputType: type, // passed to backend for analytics
+        });
       }
-    } catch {
-      Alert.alert("Paste failed", "Could not access clipboard.");
+    },
+    [scan, navigation],
+  );
+
+  const handlePaste = useCallback(async () => {
+    const content = await Clipboard.getStringAsync();
+    if (content) {
+      setText(content.slice(0, INPUT_LIMITS.MAX_LENGTH));
+      clearError();
+      inputRef.current?.focus();
     }
   }, [clearError]);
 
@@ -77,24 +88,18 @@ export default function ScanInputScreen({ navigation }: Props) {
     inputRef.current?.focus();
   }, [clearError]);
 
-  const handleAnalyze = useCallback(async () => {
+  const handleTextAnalyze = useCallback(async () => {
     if (!canSubmit) return;
+    await triggerScan(text.trim(), "text");
+  }, [canSubmit, text, triggerScan]);
 
-    const trimmed = text.trim();
-    const result = await scan(trimmed);
-
-    if (result) {
-      navigation.navigate("ScanResult", {
-        result,
-        originalText: trimmed, // ← pass original text
-      });
-    }
-  }, [canSubmit, scan, text, navigation]);
-
-  const handleSignUp = useCallback(() => {
-    setShowUpgradeModal(false);
-    // Navigate to auth — handled by RootNavigator re-render
-  }, []);
+  // Called by ScreenshotInput after OCR extracts text
+  const handleOcrTextExtracted = useCallback(
+    async (extractedText: string) => {
+      await triggerScan(extractedText, "screenshot");
+    },
+    [triggerScan],
+  );
 
   const charCountColor = isOverMax
     ? Colors.scam
@@ -109,7 +114,6 @@ export default function ScanInputScreen({ navigation }: Props) {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0}
       >
         <ScrollView
           style={styles.scroll}
@@ -121,109 +125,150 @@ export default function ScanInputScreen({ navigation }: Props) {
           <View style={styles.header}>
             <Text style={styles.heading}>Scan a message</Text>
             <Text style={styles.subheading}>
-              Paste any suspicious text to check if it's a scam
+              Paste text or upload a screenshot to check for scams
             </Text>
           </View>
 
-          {/* Usage indicator */}
+          {/* Usage badge */}
           <View style={styles.usageRow}>
             <UsageBadge />
           </View>
 
-          {/* Text input area */}
-          <View
-            style={[
-              styles.inputCard,
-              isOverMax && styles.inputCardError,
-              isUnderMin && styles.inputCardWarn,
-            ]}
-          >
-            <TextInput
-              ref={inputRef}
-              style={styles.input}
-              value={text}
-              onChangeText={(val) => {
-                setText(val);
-                if (error) clearError();
-              }}
-              placeholder="Paste suspicious message here…"
-              placeholderTextColor={Colors.textMuted}
-              multiline
-              numberOfLines={8}
-              textAlignVertical="top"
-              maxLength={INPUT_LIMITS.MAX_LENGTH + 100} // Soft cap — validation catches hard cap
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
-            />
+          {/* Mode tabs */}
+          <InputModeTabs
+            mode={inputMode}
+            onChange={(mode) => {
+              setInputMode(mode);
+              clearError();
+            }}
+          />
 
-            {/* Character counter */}
-            <View style={styles.counterRow}>
-              <Text style={[styles.charCount, { color: charCountColor }]}>
-                {charCount.toLocaleString()} /{" "}
-                {INPUT_LIMITS.MAX_LENGTH.toLocaleString()}
-              </Text>
-              {isUnderMin && (
-                <Text style={styles.hintText}>
-                  {INPUT_LIMITS.MIN_LENGTH - charCount} more characters needed
-                </Text>
-              )}
-              {isOverMax && (
-                <Text style={styles.hintTextError}>
-                  Too long — trim your message
-                </Text>
-              )}
-            </View>
-          </View>
-
-          {/* Action row: Paste + Clear */}
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={handlePaste}
-              disabled={isLoading}
-            >
-              <Text style={styles.secondaryButtonText}>📋 Paste</Text>
-            </TouchableOpacity>
-            {text.length > 0 && (
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={handleClear}
-                disabled={isLoading}
+          {/* ── Text mode ─────────────────────────────────────── */}
+          {inputMode === "text" && (
+            <>
+              <View
+                style={[
+                  styles.inputCard,
+                  isOverMax && styles.inputCardError,
+                  isUnderMin && styles.inputCardWarn,
+                ]}
               >
-                <Text style={styles.secondaryButtonText}>✕ Clear</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+                <TextInput
+                  ref={inputRef}
+                  style={styles.input}
+                  value={text}
+                  onChangeText={(val) => {
+                    setText(val);
+                    if (error) clearError();
+                  }}
+                  placeholder="Paste suspicious message here…"
+                  placeholderTextColor={Colors.textMuted}
+                  multiline
+                  numberOfLines={8}
+                  textAlignVertical="top"
+                  maxLength={INPUT_LIMITS.MAX_LENGTH + 100}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+                <View style={styles.counterRow}>
+                  <Text style={[styles.charCount, { color: charCountColor }]}>
+                    {charCount.toLocaleString()} /{" "}
+                    {INPUT_LIMITS.MAX_LENGTH.toLocaleString()}
+                  </Text>
+                  {isUnderMin && (
+                    <Text style={styles.hintText}>
+                      {INPUT_LIMITS.MIN_LENGTH - charCount} more characters
+                      needed
+                    </Text>
+                  )}
+                  {isOverMax && (
+                    <Text style={styles.hintTextError}>
+                      Too long — trim your message
+                    </Text>
+                  )}
+                </View>
+              </View>
 
-          {/* Error banner */}
-          {error && !isRateLimited && (
-            <View style={styles.errorBanner}>
-              <Text style={styles.errorText}>⚠️ {error}</Text>
-            </View>
+              {/* Paste + Clear */}
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={handlePaste}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.secondaryButtonText}>📋 Paste</Text>
+                </TouchableOpacity>
+                {text.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={handleClear}
+                    disabled={isLoading}
+                  >
+                    <Text style={styles.secondaryButtonText}>✕ Clear</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Error banner */}
+              {error && !isRateLimited && (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorText}>⚠️ {error}</Text>
+                </View>
+              )}
+
+              {/* Analyze button */}
+              <TouchableOpacity
+                style={[
+                  styles.analyzeButton,
+                  (!canSubmit || isLoading) && styles.analyzeButtonDisabled,
+                ]}
+                onPress={handleTextAnalyze}
+                disabled={!canSubmit || isLoading}
+                activeOpacity={0.8}
+              >
+                {isLoading ? (
+                  <LoadingSpinner message="Analyzing…" />
+                ) : (
+                  <Text style={styles.analyzeButtonText}>
+                    🛡️ Analyze message
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </>
           )}
 
-          {/* Primary CTA */}
-          <TouchableOpacity
-            style={[
-              styles.analyzeButton,
-              (!canSubmit || isLoading) && styles.analyzeButtonDisabled,
-            ]}
-            onPress={handleAnalyze}
-            disabled={!canSubmit || isLoading}
-            activeOpacity={0.8}
-          >
-            {isLoading ? (
-              <LoadingSpinner message="Analyzing…" />
-            ) : (
-              <Text style={styles.analyzeButtonText}>🛡️ Analyze message</Text>
-            )}
-          </TouchableOpacity>
+          {/* ── Screenshot mode ───────────────────────────────── */}
+          {inputMode === "screenshot" && (
+            <>
+              {/* Show loading overlay over screenshot UI during scan */}
+              {isLoading && (
+                <LoadingSpinner
+                  message="Analyzing extracted text…"
+                  fullScreen={false}
+                />
+              )}
 
-          {/* Info footer */}
+              {!isLoading && (
+                <ScreenshotInput onTextExtracted={handleOcrTextExtracted} />
+              )}
+
+              {/* Error banner for screenshot mode */}
+              {error && !isRateLimited && !isLoading && (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorText}>⚠️ {error}</Text>
+                </View>
+              )}
+            </>
+          )}
+
+          {/* Disclaimer */}
           <Text style={styles.disclaimer}>
             Messages are analyzed privately. Personal information is
             automatically removed before processing.
+            {inputMode === "screenshot"
+              ? " Screenshots never leave your device."
+              : ""}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -238,7 +283,6 @@ export default function ScanInputScreen({ navigation }: Props) {
         <View style={styles.modalOverlay}>
           <UpgradePrompt
             isGuest={authState === "guest"}
-            onSignUp={handleSignUp}
             onDismiss={() => setShowUpgradeModal(false)}
           />
         </View>

@@ -30,6 +30,25 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "react-native-iap",
     // "expo-device",
     [
+      "expo-image-picker",
+      {
+        photosPermission:
+          "ScamShieldLite needs access to your photos to scan screenshot messages for scams.",
+        cameraPermission:
+          "ScamShieldLite needs camera access to capture screenshots for scam analysis.",
+      },
+    ],
+    // ML Kit plugin — enables on-device model bundling
+    [
+      "@react-native-ml-kit/text-recognition",
+      {
+        // Bundle the Latin script model — covers English + most
+        // Nigerian language text (Yoruba, Igbo, Hausa use Latin)
+        // Additional scripts can be added but increase APK size
+        languages: ["latin"],
+      },
+    ],
+    [
       "expo-notifications",
       {
         icon: "./assets/notification-icon.png",

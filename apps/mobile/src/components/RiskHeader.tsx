@@ -11,6 +11,7 @@ interface Props {
   scamType: string;
   onBack: () => void;
   onShare: () => void;
+  inputType?: "text" | "screenshot";
 }
 
 const LEVEL_LABELS: Record<RiskLevel, string> = {
@@ -25,6 +26,7 @@ export default function RiskHeader({
   scamType,
   onBack,
   onShare,
+  inputType,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { color: primary } = getRiskColors(riskLevel);
@@ -58,17 +60,29 @@ export default function RiskHeader({
         <Text style={[styles.levelText, { color: primary }]}>{riskLevel}</Text>
         <Text style={styles.levelSub}>{LEVEL_LABELS[riskLevel]}</Text>
         {scamType ? (
-          <View
-            style={[
-              styles.scamTypePill,
-              { backgroundColor: primary + "22", borderColor: primary + "44" },
-            ]}
-          >
-            <Text style={[styles.scamTypeText, { color: primary }]}>
-              {scamType}
-            </Text>
+          <View>
+            <View
+              style={[
+                styles.scamTypePill,
+                {
+                  backgroundColor: primary + "22",
+                  borderColor: primary + "44",
+                },
+              ]}
+            >
+              <Text style={[styles.scamTypeText, { color: primary }]}>
+                {scamType}
+              </Text>
+            </View>
           </View>
         ) : null}
+        {inputType === "screenshot" && (
+          <View style={styles.screenshotBadge}>
+            <Text style={styles.screenshotBadgeText}>
+              🖼️ Scanned from screenshot
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -118,5 +132,19 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 0.6,
+  },
+  screenshotBadge: {
+    borderRadius: 20,
+    borderWidth: 0.5,
+    borderColor: Colors.primary + "44",
+    backgroundColor: Colors.primary + "18",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginTop: 4,
+  },
+  screenshotBadgeText: {
+    fontSize: 11,
+    color: Colors.primary,
+    fontWeight: "600",
   },
 });
