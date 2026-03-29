@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Colors } from "@/constants/colors";
+import { useNavigation } from "@react-navigation/native";
 
 interface Props {
   isGuest: boolean;
@@ -15,6 +16,7 @@ export default function UpgradePrompt({
   onSubscribe,
   onDismiss,
 }: Props) {
+  const navigation = useNavigation<any>();
   return (
     <View style={styles.container}>
       <Text style={styles.emoji}>🚫</Text>
@@ -32,7 +34,10 @@ export default function UpgradePrompt({
           <Text style={styles.primaryButtonText}>Create free account</Text>
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity style={styles.primaryButton} onPress={onSubscribe}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => navigation.navigate("Paywall")}
+        >
           <Text style={styles.primaryButtonText}>View subscription plans</Text>
         </TouchableOpacity>
       )}

@@ -14,6 +14,9 @@ import { useScanUsage } from "@/hooks/useScanUsage";
 import AuthGuard from "@/components/AuthGuard";
 import { Colors } from "@/constants/colors";
 import { UserIcon } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { AppStackParamList } from "@/navigation/AppStack";
 
 // ── Info row — reusable within this screen ────────────────────────
 interface InfoRowProps {
@@ -122,6 +125,8 @@ export default function AccountScreen() {
     );
   }, []);
 
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.titleRow}>
@@ -187,12 +192,7 @@ export default function AccountScreen() {
             {/* Subscribe button — Phase 11 */}
             <TouchableOpacity
               style={styles.subscribeButton}
-              onPress={() =>
-                Alert.alert(
-                  "Coming soon",
-                  "Subscription management will be available in Phase 11.",
-                )
-              }
+              onPress={() => navigation.navigate("Paywall")}
             >
               <Text style={styles.subscribeButtonText}>⭐ Upgrade to Pro</Text>
             </TouchableOpacity>

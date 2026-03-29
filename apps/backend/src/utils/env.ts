@@ -49,6 +49,12 @@ const envSchema = z.object({
   GROQ_MODEL: z.string().default("llama-3.3-70b-versatile"),
   AI_TIMEOUT_MS: z.coerce.number().default(8000),
   AI_MAX_INPUT_LENGTH: z.coerce.number().default(3000),
+
+  // Google Play Billing
+  GOOGLE_PLAY_PACKAGE_NAME: z.string().default("com.scamshieldlite.app"),
+  GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL: z.string().optional(),
+  GOOGLE_PLAY_PRIVATE_KEY: z.string().optional(),
+  GOOGLE_PLAY_WEBHOOK_SECRET: z.string().optional(),
 });
 
 // Validate and throw early if configuration is broken

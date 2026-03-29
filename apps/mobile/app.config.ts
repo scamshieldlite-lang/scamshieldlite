@@ -27,6 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "expo-secure-store",
+    "react-native-iap",
     // "expo-device",
     [
       "expo-notifications",

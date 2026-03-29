@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import BottomTabs from "./BottomTabs";
 import ScanResultScreen from "@/screens/scan/ScanResultScreen";
 import type { ScanResponse } from "@scamshieldlite/shared/";
+import PaywallScreen from "@/screens/subscription/PaywallScreen";
 
 export type AppStackParamList = {
   MainTabs: undefined;
@@ -10,6 +11,7 @@ export type AppStackParamList = {
     result: ScanResponse;
     originalText: string; // ← added — needed for report submission
   };
+  Paywall: undefined;
 };
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -24,6 +26,15 @@ export default function AppStack() {
         options={{
           presentation: "card",
           animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="Paywall"
+        component={PaywallScreen}
+        options={{
+          presentation: "modal",
+          animation: "slide_from_bottom",
+          headerShown: false,
         }}
       />
     </Stack.Navigator>
