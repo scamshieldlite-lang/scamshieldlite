@@ -57,12 +57,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         color: BRAND_NAVY, // 👈 Updated
       },
     ],
-    [
-      "react-native-reanimated",
-      {
-        enableHermes: true,
-      },
-    ],
   ],
   extra: {
     apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000",
