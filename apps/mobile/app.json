@@ -15,6 +15,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.ibnballo.scamshieldlite",
+      "newArchEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -26,9 +28,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-secure-store"
-    ],
+    "plugins": ["expo-secure-store"],
     "extra": {
       "apiBaseUrl": "http://localhost:3000",
       "eas": {
