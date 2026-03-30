@@ -12,6 +12,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "automatic",
+  platforms: ["android", "ios"],
   splash: {
     image: "./assets/splash.png",
     resizeMode: "contain",
@@ -39,15 +40,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     // ML Kit plugin — enables on-device model bundling
-    [
-      "@react-native-ml-kit/text-recognition",
-      {
-        // Bundle the Latin script model — covers English + most
-        // Nigerian language text (Yoruba, Igbo, Hausa use Latin)
-        // Additional scripts can be added but increase APK size
-        languages: ["latin"],
-      },
-    ],
+    // [
+    //   "@react-native-ml-kit/text-recognition",
+    //   {
+    //     // Bundle the Latin script model — covers English + most
+    //     // Nigerian language text (Yoruba, Igbo, Hausa use Latin)
+    //     // Additional scripts can be added but increase APK size
+    //     languages: ["latin"],
+    //   },
+    // ],
     [
       "expo-notifications",
       {
@@ -58,5 +59,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ],
   extra: {
     apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000",
+    eas: {
+      projectId: "8ea49fa7-ba5b-42ec-b27f-484a00d89e60",
+    },
   },
 });

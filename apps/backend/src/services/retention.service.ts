@@ -63,7 +63,7 @@ export const retentionService = {
         DELETE FROM audit_logs 
         WHERE id IN (
           SELECT id FROM audit_logs 
-          WHERE created_at < ${cutoff} 
+          WHERE created_at < ${cutoff.toISOString()} 
           LIMIT 1000
         )
       `);
