@@ -263,6 +263,49 @@ export const auditLogs = pgTable(
   }),
 );
 
+// ─── Consent Records ─────────────────────────────────────────────
+// Tracks when a user accepted the Terms and Privacy Policy.
+// Required for GDPR/NDPR compliance evidence.
+
+export const consentRecords = pgTable(
+  "consent_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    termsVersion: text("terms_version").notNull(), // e.g. "1.0"
+    privacyVersion: text("privacy_version").notNull(), // e.g. "1.0"
+    ipHash: text("ip_hash"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: index("consent_records_user_idx").on(table.userId),
+    createdIdx: index("consent_records_created_idx").on(table.createdAt),
+  }),
+);
+
+// ─── Privacy Settings ─────────────────────────────────────────────
+// Per-user privacy preferences.
+// One row per user — upsert on update.
+
+export const privacySettings = pgTable("privacy_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  analyticsEnabled: boolean("analytics_enabled").notNull().default(true),
+  scanHistoryEnabled: boolean("scan_history_enabled").notNull().default(true),
+  crashReportingEnabled: boolean("crash_reporting_enabled")
+    .notNull()
+    .default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Subscription = typeof subscriptions.$inferSelect;
@@ -279,6 +322,11 @@ export type NewDevice = typeof devices.$inferInsert;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+export type ConsentRecord = typeof consentRecords.$inferSelect;
+export type NewConsentRecord = typeof consentRecords.$inferInsert;
+export type PrivacySettings = typeof privacySettings.$inferSelect;
+export type NewPrivacySettings = typeof privacySettings.$inferInsert;
 
 // ─── Relations ───────────────────────────────────────────────────────────────
 
@@ -299,3 +347,20 @@ export const scanRelations = relations(scans, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+export const consentRecordRelations = relations(consentRecords, ({ one }) => ({
+  user: one(user, {
+    fields: [consentRecords.userId],
+    references: [user.id],
+  }),
+}));
+
+export const privacySettingsRelations = relations(
+  privacySettings,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [privacySettings.userId],
+      references: [user.id],
+    }),
+  }),
+);

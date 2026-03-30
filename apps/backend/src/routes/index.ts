@@ -3,6 +3,7 @@ import healthRouter from "./health.route";
 import scanRouter from "./scan.route";
 import reportRouter from "./report.route";
 import subscriptionRouter from "./subscription.route";
+import privacyRouter from "./privacy.route";
 import { auth } from "@/lib/auth";
 import { toNodeHandler } from "better-auth/node";
 
@@ -16,5 +17,6 @@ router.use("/health", healthRouter);
 router.use("/scan", scanRouter);
 router.use("/report", reportRouter);
 router.use("/subscription", subscriptionRouter);
+router.use("/privacy", privacyRouter);
 
 export default router;

@@ -14,9 +14,16 @@ import { useScanUsage } from "@/hooks/useScanUsage";
 import AuthGuard from "@/components/AuthGuard";
 import { Colors } from "@/constants/colors";
 import { UserIcon } from "lucide-react-native";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import {
+  CompositeNavigationProp,
+  useNavigation,
+} from "@react-navigation/native";
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
 import type { AppStackParamList } from "@/navigation/AppStack";
+import { AccountStackParamList } from "@/navigation/AccountStack";
 
 // ── Info row — reusable within this screen ────────────────────────
 interface InfoRowProps {
@@ -24,6 +31,11 @@ interface InfoRowProps {
   value: string;
   valueColor?: string;
 }
+
+type AccountScreenNavProp = CompositeNavigationProp<
+  NativeStackNavigationProp<AccountStackParamList, "AccountHome">,
+  NativeStackNavigationProp<AppStackParamList>
+>;
 
 function InfoRow({ label, value, valueColor }: InfoRowProps) {
   return (
@@ -82,6 +94,7 @@ const sectionStyles = StyleSheet.create({
 
 // ── Main screen ───────────────────────────────────────────────────
 export default function AccountScreen() {
+  const navigation = useNavigation<AccountScreenNavProp>();
   const { user, logout, authState } = useAuth();
   const { usage } = useScanUsage();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -125,8 +138,8 @@ export default function AccountScreen() {
     );
   }, []);
 
-  const navigation =
-    useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  // const navigation =
+  //   useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.titleRow}>
@@ -201,6 +214,13 @@ export default function AccountScreen() {
           {/* Account actions */}
           <SectionHeader title="Account" />
           <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => navigation.navigate("Privacy")}
+            >
+              <Text style={styles.actionText}>🔒 Privacy settings</Text>
+              <Text style={styles.actionChevron}>›</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionRow}
               onPress={handleLogout}
@@ -326,7 +346,20 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     paddingVertical: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Colors.border,
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+  },
+  actionText: {
+    color: Colors.textPrimary,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  actionChevron: {
+    color: Colors.textMuted,
+    fontSize: 18,
   },
   actionTextDanger: {
     color: Colors.scam,

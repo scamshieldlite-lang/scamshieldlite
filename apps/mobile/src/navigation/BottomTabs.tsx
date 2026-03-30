@@ -7,6 +7,7 @@ import ScanInputScreen from "@/screens/scan/ScanInputScreen";
 import HistoryScreen from "@/screens/history/HistoryScreen";
 import AccountScreen from "@/screens/account/AccountScreen";
 import { Colors } from "@/constants/colors";
+import AccountStack from "./AccountStack";
 
 export type BottomTabParamList = {
   Scan: undefined;
@@ -64,7 +65,7 @@ export default function BottomTabs() {
       />
       <Tab.Screen
         name="Account"
-        component={AccountScreen}
+        component={AccountStack}
         options={{
           tabBarLabel: "Account",
           tabBarIcon: ({ color, size, focused }) => (

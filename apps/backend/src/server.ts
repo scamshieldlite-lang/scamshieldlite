@@ -2,10 +2,15 @@ import { createApp } from "./app";
 import { env } from "@/utils/env";
 import { logger } from "@/utils/logger";
 import { testDbConnection } from "@/db/index";
+import {
+  startRetentionScheduler,
+  stopRetentionScheduler,
+} from "./jobs/retention.job";
 
 async function bootstrap(): Promise<void> {
   // 1. Verify DB before accepting traffic
   await testDbConnection();
+  startRetentionScheduler();
 
   // 2. Create Express app
   const app = createApp();
@@ -29,6 +34,7 @@ async function bootstrap(): Promise<void> {
   // 4. Graceful shutdown — finish in-flight requests before exiting
   const shutdown = (signal: string) => {
     logger.info({ signal }, "Shutdown signal received");
+    stopRetentionScheduler();
 
     server.close(() => {
       logger.info("HTTP server closed");

@@ -6,6 +6,7 @@ import { env } from "@/utils/env";
 import { logger } from "@/utils/logger";
 import { subscriptionService } from "@/services/subscription.service";
 import { createAuthMiddleware } from "better-auth/api";
+import { consentService } from "@/services/consent.service";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -71,6 +72,34 @@ export const auth = betterAuth({
         }
       }
     }),
+  },
+
+  // Update the existing signup hook handler:
+  handler: async (context: any) => {
+    try {
+      const userId = context.context.newSession?.userId;
+      if (!userId) return;
+
+      // Create trial subscription
+      await subscriptionService.createTrialSubscription(
+        userId,
+        env.TRIAL_DURATION_DAYS,
+      );
+
+      // Record initial consent — user agreed to terms on signup screen
+      const ip = (
+        context.context.request?.headers?.get("x-forwarded-for") ?? ""
+      )
+        .split(",")[0]
+        ?.trim();
+      const ua = context.context.request?.headers?.get("user-agent") ?? "";
+
+      await consentService.recordConsent(userId, ip, ua);
+
+      logger.info({ userId }, "Trial + consent recorded for new user");
+    } catch (error) {
+      logger.error({ error }, "Post-signup hooks failed");
+    }
   },
 
   advanced: {
