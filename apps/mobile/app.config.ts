@@ -25,10 +25,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     package: "com.scamshieldlite.app",
     permissions: [],
+    jsEngine: "hermes",
   },
   plugins: [
     "expo-secure-store",
-    // "react-native-iap",
+    "react-native-iap",
     // "expo-device",
     [
       "expo-image-picker",
@@ -54,6 +55,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         icon: "./assets/notification-icon.png",
         color: BRAND_NAVY, // 👈 Updated
+      },
+    ],
+    [
+      "react-native-reanimated",
+      {
+        enableHermes: true,
       },
     ],
   ],
