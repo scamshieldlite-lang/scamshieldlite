@@ -40,6 +40,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           "ScamShieldLite needs camera access to capture screenshots for scam analysis.",
       },
     ],
+    [
+      "expo-build-properties",
+      {
+        android: {
+          newArchEnabled: true,
+          kotlinVersion: "2.1.20",
+          extraMavenRepos: ["https://www.jitpack.io"],
+        },
+      },
+    ],
     // ML Kit plugin — enables on-device model bundling
     // [
     //   "@react-native-ml-kit/text-recognition",
