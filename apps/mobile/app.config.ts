@@ -23,13 +23,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: BRAND_NAVY, // 👈 Updated
     },
-    package: "com.scamshieldlite.app",
+    package: "com.ibnballo.scamshieldlite",
+    // newArchEnabled: true,
     permissions: [],
     jsEngine: "hermes",
   },
   plugins: [
     "expo-secure-store",
-    "react-native-iap",
+    // "react-native-iap",
     // "expo-device",
     [
       "expo-image-picker",
@@ -40,16 +41,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           "ScamShieldLite needs camera access to capture screenshots for scam analysis.",
       },
     ],
-    [
-      "expo-build-properties",
-      {
-        android: {
-          newArchEnabled: true,
-          kotlinVersion: "2.1.20",
-          extraMavenRepos: ["https://www.jitpack.io"],
-        },
-      },
-    ],
+    // [
+    //   "expo-build-properties",
+    //   {
+    //     android: {
+    //       newArchEnabled: true,
+    //       kotlinVersion: "2.1.20",
+    //       extraMavenRepos: ["https://www.jitpack.io"],
+    //     },
+    //   },
+    // ],
     // ML Kit plugin — enables on-device model bundling
     // [
     //   "@react-native-ml-kit/text-recognition",

@@ -9,5 +9,5 @@
       "@shared/*": ["../../packages/shared/src/*"]
     }
   },
-  "include": ["src/**/*", "App.tsx", "app.json", "app.config.ts"]
+  "include": ["src/**/*", "App.tsx", "app.config.ts"]
 }
