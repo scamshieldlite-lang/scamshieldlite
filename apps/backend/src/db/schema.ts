@@ -56,7 +56,7 @@ export const session = pgTable(
     updatedAt: timestamp("updated_at")
       .$onUpdate(() => new Date())
       .notNull(),
-    ipHash: text("ip_hash"), // hashed instead of raw IP
+    ipAddress: text("ip_address"), // hashed instead of raw IP
     userAgent: text("user_agent"),
     userId: text("user_id")
       .notNull()

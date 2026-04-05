@@ -30,6 +30,8 @@ import ScreenshotInput from "@/components/ScreenshotInput";
 
 import { Colors } from "@/constants/colors";
 import { INPUT_LIMITS } from "@/constants/limits";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<BottomTabParamList, "Scan">,
@@ -100,6 +102,14 @@ export default function ScanInputScreen({ navigation }: Props) {
     },
     [triggerScan],
   );
+
+  const rootNavigation =
+    useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+
+  const handleSubscribe = useCallback(() => {
+    setShowUpgradeModal(false);
+    rootNavigation.navigate("Paywall");
+  }, [rootNavigation]);
 
   const charCountColor = isOverMax
     ? Colors.scam
@@ -283,6 +293,7 @@ export default function ScanInputScreen({ navigation }: Props) {
         <View style={styles.modalOverlay}>
           <UpgradePrompt
             isGuest={authState === "guest"}
+            onSubscribe={handleSubscribe}
             onDismiss={() => setShowUpgradeModal(false)}
           />
         </View>

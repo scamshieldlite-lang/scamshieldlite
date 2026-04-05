@@ -75,17 +75,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const session = await authService.getSession();
-      if (session?.user) {
+      if (session?.user?.id) {
         setUser(session.user);
         setAuthState("authenticated");
-        logger.info("Session restored for user:", session.user.id);
       } else {
-        // Token invalid or expired
         await storageService.clearAuthData();
         setAuthState("unauthenticated");
       }
     } catch (error) {
-      logger.error("Session restore failed", error);
+      console.log("[AUTH] Session restore failed:", error);
       setAuthState("unauthenticated");
     } finally {
       setIsLoading(false);
@@ -108,10 +106,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    await authService.logout();
-    setUser(null);
-    setAuthState("unauthenticated");
-  }, []);
+    try {
+      // Only call the API if actually authenticated
+      // Guest users have no session to invalidate
+      if (authState === "authenticated") {
+        await authService.logout();
+      }
+    } catch {
+      // Even if the API call fails, clear local state
+      // The user should always be able to log out
+    } finally {
+      await storageService.clearAuthData();
+      setUser(null);
+      setAuthState("unauthenticated");
+    }
+  }, [authState]);
 
   const continueAsGuest = useCallback(() => {
     setAuthState("guest");

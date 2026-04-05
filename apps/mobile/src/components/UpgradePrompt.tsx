@@ -1,22 +1,35 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Colors } from "@/constants/colors";
-import { useNavigation } from "@react-navigation/native";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   isGuest: boolean;
-  onSignUp?: () => void;
   onSubscribe?: () => void;
   onDismiss?: () => void;
 }
 
 export default function UpgradePrompt({
   isGuest,
-  onSignUp,
   onSubscribe,
   onDismiss,
 }: Props) {
-  const navigation = useNavigation<any>();
+  const { logout } = useAuth();
+
+  // Calling logout sets authState → "unauthenticated"
+  // RootNavigator automatically swaps to AuthStack
+  // WelcomeScreen appears with Login + Sign up buttons
+  // No manual navigation needed
+  const handleSignUp = () => {
+    onDismiss?.(); // close the modal first
+    logout(); // then trigger the stack swap
+  };
+
+  const handleSubscribe = () => {
+    onDismiss?.();
+    onSubscribe?.();
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.emoji}>🚫</Text>
@@ -30,13 +43,13 @@ export default function UpgradePrompt({
       </Text>
 
       {isGuest ? (
-        <TouchableOpacity style={styles.primaryButton} onPress={onSignUp}>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleSignUp}>
           <Text style={styles.primaryButtonText}>Create free account</Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => navigation.navigate("Paywall")}
+          onPress={handleSubscribe}
         >
           <Text style={styles.primaryButtonText}>View subscription plans</Text>
         </TouchableOpacity>

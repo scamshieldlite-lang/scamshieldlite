@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   subtitle: { fontSize: 16, color: Colors.textSecondary, textAlign: "center" },
-  actions: { padding: 24, gap: 12 },
+  actions: { padding: 24, gap: 12, marginBottom: 24 },
   primaryButton: {
     backgroundColor: Colors.primary,
     borderRadius: 12,

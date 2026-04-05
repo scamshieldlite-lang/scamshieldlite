@@ -11,8 +11,8 @@ interface Props {
 }
 
 export default function AuthGuard({ children, message }: Props) {
-  const { authState } = useAuth();
-  const navigation = useNavigation<any>();
+  const { authState, logout } = useAuth();
+  // const navigation = useNavigation<any>();
 
   if (authState === "authenticated") {
     return <>{children}</>;
@@ -27,17 +27,12 @@ export default function AuthGuard({ children, message }: Props) {
       <Text style={styles.message}>
         {message ?? "Create a free account to access this feature."}
       </Text>
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={() => navigation.navigate("SignUp")}
-      >
-        <Text style={styles.primaryText}>Create free account</Text>
+      <TouchableOpacity style={styles.primaryButton} onPress={logout}>
+        <Text style={styles.primaryText}>Sign in or Create account</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.secondaryText}>
-          Already have an account? Log in
-        </Text>
-      </TouchableOpacity>
+      {/* <TouchableOpacity onPress={() => navigation.navigate("Login")}> */}
+      <Text style={styles.hint}>You'll be taken to the sign in screen</Text>
+      {/* </TouchableOpacity> */}
     </View>
   );
 }
@@ -90,5 +85,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
+  },
+  hint: {
+    color: Colors.textMuted,
+    fontSize: 12,
+    // marginTop: 6,
+    textAlign: "center",
   },
 });

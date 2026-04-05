@@ -37,7 +37,7 @@ export const imagePickerService = {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"] satisfies ImagePicker.MediaType[],
       allowsEditing: false, // Don't crop — preserve full message context
       quality: 1, // Max quality for OCR accuracy
       allowsMultipleSelection: false,
@@ -78,7 +78,7 @@ export const imagePickerService = {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"] satisfies ImagePicker.MediaType[],
       allowsEditing: true,
       // Crop to square — helps focus on the message area
       aspect: [3, 4],

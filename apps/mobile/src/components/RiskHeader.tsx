@@ -30,6 +30,7 @@ export default function RiskHeader({
 }: Props) {
   const insets = useSafeAreaInsets();
   const { color: primary } = getRiskColors(riskLevel);
+  const backgroundColor = Colors.background;
 
   return (
     <View
@@ -37,7 +38,7 @@ export default function RiskHeader({
         styles.container,
         {
           paddingTop: insets.top + 8,
-          backgroundColor: primary + "18",
+          backgroundColor: backgroundColor,
           borderBottomColor: primary + "33",
         },
       ]}
