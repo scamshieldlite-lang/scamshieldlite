@@ -23,6 +23,7 @@ const envSchema = z.object({
   // CORS
   ALLOWED_ORIGINS: z.string().default("exp://localhost:8081"),
   CORS_ORIGIN: z.string().default("*"),
+  SERVER_HOST: z.string().default("localhost"),
 
   // AI Providers
   AI_PROVIDER: z

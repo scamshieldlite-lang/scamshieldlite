@@ -1,54 +1,46 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useScanUsage } from "@/hooks/useScanUsage";
+import { useAuth } from "@/hooks/useAuth";
 import { Colors } from "@/constants/colors";
 
 export default function UsageBadge() {
   const { usage } = useScanUsage();
+  const { authState } = useAuth();
 
   if (!usage) return null;
 
-  const { scansRemaining, scanLimit, isGuest } = usage;
-  const isLow = scansRemaining === 1; // ⚠️ 1 scan left
-  const isExhausted = scansRemaining === 0; // 🛑 0 scans left
+  // Use authState as source of truth for guest status
+  // not the API response which may be stale
+  const isGuest = authState !== "authenticated";
 
-  // 🎨 Selection Logic based on your probable Constants
-  const errorColor = Colors.scam || "#EF4444";
-  const warningColor = Colors.suspicious || "#F59E0B";
-  const okColor = Colors.primary || "#38BDF8";
+  const { scansRemaining, scanLimit } = usage;
+  const isLow = scansRemaining <= 1;
+  const isExhausted = scansRemaining === 0;
 
   return (
     <View
       style={[
         styles.container,
-        isExhausted && {
-          borderColor: errorColor,
-          backgroundColor: errorColor + "15",
-        },
-        isLow &&
-          !isExhausted && {
-            borderColor: warningColor,
-            backgroundColor: warningColor + "15",
-          },
+        isExhausted && styles.containerExhausted,
+        isLow && !isExhausted && styles.containerLow,
       ]}
     >
       <View
         style={[
           styles.dot,
-          {
-            backgroundColor: isExhausted
-              ? errorColor
-              : isLow
-                ? warningColor
-                : okColor,
-          },
+          isExhausted
+            ? styles.dotExhausted
+            : isLow
+              ? styles.dotLow
+              : styles.dotOk,
         ]}
       />
       <Text
         style={[
           styles.text,
-          isExhausted && { color: errorColor },
-          isLow && !isExhausted && { color: warningColor },
+          isExhausted && styles.textExhausted,
+          isLow && !isExhausted && styles.textLow,
         ]}
       >
         {isExhausted
@@ -69,18 +61,31 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    gap: 8,
-    borderWidth: 1,
+    gap: 6,
+    borderWidth: 0.5,
     borderColor: Colors.border,
   },
+  containerLow: {
+    borderColor: Colors.suspicious,
+    backgroundColor: Colors.suspiciousLight + "22",
+  },
+  containerExhausted: {
+    borderColor: Colors.scam,
+    backgroundColor: Colors.scamLight + "22",
+  },
   dot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
   },
+  dotOk: { backgroundColor: Colors.safe },
+  dotLow: { backgroundColor: Colors.suspicious },
+  dotExhausted: { backgroundColor: Colors.scam },
   text: {
     fontSize: 12,
     color: Colors.textSecondary,
-    fontWeight: "600",
+    fontWeight: "500",
   },
+  textLow: { color: Colors.suspicious },
+  textExhausted: { color: Colors.scam },
 });

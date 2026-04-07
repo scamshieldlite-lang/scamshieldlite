@@ -11,7 +11,7 @@ import { eq } from "drizzle-orm";
 import type {
   VerifyPurchaseResponse,
   SubscriptionStatusResponse,
-} from "@scamshieldlite/shared";
+} from "@scamshieldlite/shared/";
 
 const verifyPurchaseSchema = z.object({
   purchaseToken: z.string().min(1, "purchaseToken is required"),
@@ -34,6 +34,33 @@ export const subscriptionController = {
 
       const response: SubscriptionStatusResponse = { subscription };
       res.json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async ensureTrial(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+
+      const existing = await subscriptionService.getSubscription(req.user.id);
+
+      if (!existing) {
+        await subscriptionService.createTrialSubscription(
+          req.user.id,
+          env.TRIAL_DURATION_DAYS,
+        );
+        logger.info(
+          { userId: req.user.id },
+          "Trial subscription created via ensure-trial",
+        );
+      }
+
+      const subscription = await subscriptionService.getSubscriptionState(
+        req.user.id,
+      );
+
+      res.json({ subscription });
     } catch (error) {
       next(error);
     }

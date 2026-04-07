@@ -71,7 +71,16 @@ export default function SignUpScreen({ navigation }: Props) {
     try {
       await signUp(name.trim(), email.trim().toLowerCase(), password);
       // RootNavigator re-renders on authState → "authenticated"
-    } catch (err) {
+    } catch (err: any) {
+      // Network error — special handling
+      if (err?.isNetworkError || err?.message?.includes("reach the server")) {
+        setErrors({
+          general:
+            "Could not connect to the server. Make sure you are on the same WiFi as your computer and try again.",
+        });
+        return;
+      }
+
       const message = extractErrorMessage(err);
 
       if (

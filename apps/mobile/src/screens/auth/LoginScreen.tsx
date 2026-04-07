@@ -55,29 +55,26 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       await login(email.trim().toLowerCase(), password);
       // Success: RootNavigator handles redirection
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.isNetworkError || err?.message?.includes("reach the server")) {
+        setErrors({
+          general:
+            "Could not connect to the server. Make sure you are on the same WiFi as your computer.",
+        });
+        return;
+      }
+
       const message = extractErrorMessage(err);
-
-      // 2. Security-First Error Mapping
-      // We combine "not found", "invalid", and "credentials" into one generic message
-      const lowerMessage = message.toLowerCase();
-
       if (
-        lowerMessage.includes("invalid") ||
-        lowerMessage.includes("credentials") ||
-        lowerMessage.includes("password") ||
-        lowerMessage.includes("not found")
+        message.toLowerCase().includes("invalid") ||
+        message.toLowerCase().includes("credentials") ||
+        message.toLowerCase().includes("password")
       ) {
-        setErrors({
-          general:
-            "Invalid email or password. Please check your credentials and try again.",
-        });
+        setErrors({ password: "Incorrect email or password" });
+      } else if (message.toLowerCase().includes("not found")) {
+        setErrors({ email: "No account found with this email" });
       } else {
-        // Handle network errors or server crashes separately
-        setErrors({
-          general:
-            "Unable to connect. Please check your internet and try again.",
-        });
+        setErrors({ general: message });
       }
     } finally {
       setIsLoading(false);

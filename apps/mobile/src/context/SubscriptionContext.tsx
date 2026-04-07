@@ -7,7 +7,7 @@ import React, {
   type ReactNode,
 } from "react";
 import { subscriptionService } from "@/services/subscription.service";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/context/AuthContext";
 import type { SubscriptionState } from "@scamshieldlite/shared/";
 import { logger } from "@/utils/logger";
 
@@ -16,10 +16,6 @@ interface SubscriptionContextValue {
   isLoading: boolean;
   refresh: () => Promise<void>;
 }
-
-const SubscriptionContext = createContext<SubscriptionContextValue | null>(
-  null,
-);
 
 const GUEST_STATE: SubscriptionState = {
   plan: "guest",
@@ -32,38 +28,44 @@ const GUEST_STATE: SubscriptionState = {
   daysRemaining: null,
 };
 
+const SubscriptionContext = createContext<SubscriptionContextValue | null>(
+  null,
+);
+
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const { authState, user } = useAuth();
   const [subscription, setSubscription] = useState<SubscriptionState | null>(
     null,
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  const refresh = useCallback(async () => {
-    if (authState !== "authenticated" || !user) {
-      setSubscription(GUEST_STATE);
-      return;
-    }
+  // ← consume authState so we can react to login/logout
+  const { authState } = useAuthContext();
 
+  const refresh = useCallback(async () => {
     setIsLoading(true);
     try {
       const state = await subscriptionService.getStatus();
       setSubscription(state);
+      logger.debug("Subscription state refreshed:", JSON.stringify(state));
     } catch (error) {
       logger.error("Failed to fetch subscription state", error);
     } finally {
       setIsLoading(false);
     }
-  }, [authState, user]);
+  }, []); // stable
 
-  // Fetch on auth state change
+  // ← re-fetch whenever authState changes
   useEffect(() => {
-    if (authState === "guest") {
+    logger.debug("SubscriptionContext: authState changed to", authState);
+
+    if (authState === "guest" || authState === "unauthenticated") {
       setSubscription(GUEST_STATE);
       return;
     }
+
+    // authenticated — fetch real subscription state
     refresh();
-  }, [authState, refresh]);
+  }, [authState]); // intentionally NOT including refresh
 
   return (
     <SubscriptionContext.Provider value={{ subscription, isLoading, refresh }}>

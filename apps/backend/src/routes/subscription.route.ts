@@ -5,16 +5,17 @@ import express from "express";
 
 const router: Router = Router();
 
-// Authenticated routes
 router.get("/status", requireAuth, subscriptionController.getStatus);
+router.post(
+  "/ensure-trial",
+  requireAuth,
+  subscriptionController.ensureTrial, // ← add this
+);
 router.post(
   "/verify-purchase",
   requireAuth,
   subscriptionController.verifyPurchase,
 );
-
-// Webhook — no auth, signature-verified instead
-// Must use raw body for HMAC validation
 router.post(
   "/webhook",
   express.raw({ type: "application/json" }),

@@ -7,6 +7,7 @@ import React, {
   type ReactNode,
 } from "react";
 import { scanService } from "@/services/scan.service";
+import { useAuthContext } from "@/context/AuthContext";
 import type { UsageSummary } from "@scamshieldlite/shared/";
 import { logger } from "@/utils/logger";
 
@@ -30,23 +31,29 @@ export function ScanUsageProvider({ children }: { children: ReactNode }) {
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // ← consume authState so we can react to login/logout
+  const { authState } = useAuthContext();
+
   const refresh = useCallback(async () => {
     try {
       const data = await scanService.getUsage();
       setUsage(data);
+      logger.debug("Scan usage refreshed:", JSON.stringify(data));
     } catch (error) {
       logger.warn("Failed to fetch scan usage", error);
       setUsage(DEFAULT_USAGE);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, []); // stable — no dependencies needed
 
+  // ← re-fetch whenever authState changes
+  // This covers: guest → authenticated, authenticated → guest, app restart
   useEffect(() => {
+    logger.debug("ScanUsageContext: authState changed to", authState);
     refresh();
-  }, [refresh]);
+  }, [authState]); // intentionally NOT including refresh — it's stable
 
-  // Immediately decrement in UI without waiting for network round-trip
   const decrementOptimistic = useCallback(() => {
     setUsage((prev) =>
       prev

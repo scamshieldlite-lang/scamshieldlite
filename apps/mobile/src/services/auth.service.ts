@@ -1,8 +1,8 @@
-// apps/mobile/src/services/auth.service.ts
-
 import { apiClient } from "./api.service";
 import { storageService, StorageKey } from "./storage.service";
+import { tokenStore } from "./tokenStore";
 import type { AuthUser } from "@scamshieldlite/shared/";
+import { logger } from "@/utils/logger";
 
 export interface LoginParams {
   email: string;
@@ -15,13 +15,17 @@ export interface SignUpParams {
   name: string;
 }
 
-// Better Auth actual response shape
 interface BetterAuthResponse {
   token?: string;
+  redirect?: boolean;
   user?: {
     id: string;
     email: string;
     name: string;
+    emailVerified: boolean;
+    image: string | null;
+    createdAt: string;
+    updatedAt: string;
   };
 }
 
@@ -30,63 +34,85 @@ export interface UserSession {
   token: string;
 }
 
+async function storeSession(token: string, userId: string): Promise<void> {
+  // 1. Set in memory immediately — interceptor will use this right away
+  tokenStore.set(token);
+
+  // 2. Persist to SecureStore for app restart recovery
+  await storageService.set(StorageKey.AUTH_TOKEN, token);
+  await storageService.set(StorageKey.USER_ID, userId);
+
+  logger.debug(
+    "Token set in memory and SecureStore:",
+    token.substring(0, 20) + "...",
+  );
+}
+
 export const authService = {
   async login(params: LoginParams): Promise<UserSession> {
     const { data } = await apiClient.post<BetterAuthResponse>(
       "/auth/sign-in/email",
-      params,
+      {
+        email: params.email,
+        password: params.password,
+      },
     );
 
-    // Better Auth returns token at top level
-    const token = data.token;
-    const user = data.user;
+    logger.debug("Sign-in response:", JSON.stringify(data));
 
-    if (!token || !user) {
-      throw new Error("Invalid response from auth server");
+    if (!data.token || !data.user) {
+      throw new Error(
+        `Invalid login response — token: ${!!data.token}, user: ${!!data.user}`,
+      );
     }
 
-    await storageService.set(StorageKey.AUTH_TOKEN, token);
-    await storageService.set(StorageKey.USER_ID, user.id);
+    await storeSession(data.token, data.user.id);
+
+    logger.info("Login successful for:", data.user.email);
+
     return {
-      token,
+      token: data.token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
       },
     };
   },
 
   async signUp(params: SignUpParams): Promise<UserSession> {
-    const { data } = await apiClient.post<BetterAuthResponse>(
-      "/auth/sign-up/email",
-      params,
-    );
+    // Step 1 — Create account
+    await apiClient.post<BetterAuthResponse>("/auth/sign-up/email", {
+      email: params.email,
+      password: params.password,
+      name: params.name,
+    });
 
-    const token = data.token;
-    const user = data.user;
+    // Step 2 — Sign in (stores token in memory immediately)
+    const session = await this.login({
+      email: params.email,
+      password: params.password,
+    });
 
-    if (!token || !user) {
-      throw new Error("Invalid response from auth server");
+    // Step 3 — Ensure trial subscription exists
+    // Token is now in memory so this request is authenticated
+    try {
+      await apiClient.post("/subscription/ensure-trial");
+    } catch (error) {
+      // Non-fatal — trial will be created on next usage check
+      logger.warn("Could not ensure trial subscription:", error);
     }
 
-    await storageService.set(StorageKey.AUTH_TOKEN, token);
-    await storageService.set(StorageKey.USER_ID, user.id);
-    return {
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
-    };
+    return session;
   },
 
   async logout(): Promise<void> {
     try {
       await apiClient.post("/auth/sign-out");
-    } finally {
+    } catch {
       // Always clear local state even if server call fails
+    } finally {
+      tokenStore.clear();
       await storageService.clearAuthData();
     }
   },
@@ -95,6 +121,7 @@ export const authService = {
     try {
       const { data } =
         await apiClient.get<BetterAuthResponse>("/auth/get-session");
+
       if (!data?.user) return null;
 
       return {

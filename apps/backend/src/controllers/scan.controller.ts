@@ -14,6 +14,9 @@ import type {
   ScanResponse,
   UsageSummary,
 } from "@scamshieldlite/shared";
+import { subscriptionService } from "@/services/subscription.service";
+import { logger } from "@/utils/logger";
+import { env } from "@/utils/env";
 
 export const scanController = {
   /**
@@ -101,6 +104,7 @@ export const scanController = {
         (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ??
         req.socket.remoteAddress;
 
+      // Remove the subscription creation from here — moved to sign-in
       const result = await rateLimitService.getUsage({
         userId: req.user?.id,
         deviceFingerprint: req.headers["x-device-fingerprint"] as string,

@@ -36,12 +36,6 @@ export default function HistoryScreen() {
 
   const isAuthenticated = authState === "authenticated";
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetch();
-    }
-  }, [isAuthenticated, fetch]);
-
   const handleCardPress = useCallback(
     (item: NormalizedHistoryItem) => {
       // Reconstruct ScanResponse shape from normalized history item

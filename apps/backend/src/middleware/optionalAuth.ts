@@ -8,9 +8,14 @@ export async function optionalAuth(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers as Record<string, string>,
+    const headers = new Headers();
+    Object.entries(req.headers).forEach(([key, value]) => {
+      if (value) {
+        headers.set(key, Array.isArray(value) ? value[0] : value);
+      }
     });
+
+    const session = await auth.api.getSession({ headers });
 
     if (session?.user) {
       req.user = {

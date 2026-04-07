@@ -9,8 +9,9 @@ if (__DEV__) {
 
 export const API_CONFIG = {
   baseURL: apiBaseUrl,
-  timeout: 12000,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
+    Origin: "http://192.168.43.93:3000",
   },
 } as const;

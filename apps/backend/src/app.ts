@@ -26,8 +26,13 @@ export function createApp(): Application {
     cors({
       origin: env.CORS_ORIGIN === "*" ? "*" : env.CORS_ORIGIN.split(","),
       credentials: true,
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID"],
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Request-ID",
+        "X-Device-Fingerprint",
+      ],
     }),
   );
 
