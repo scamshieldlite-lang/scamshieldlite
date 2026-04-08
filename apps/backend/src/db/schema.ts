@@ -24,12 +24,14 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
 ]);
 
 export const riskLevelEnum = pgEnum("risk_level", [
-  "Safe",
-  "Medium Risk",
-  "High Risk",
+  "Likely Safe",
+  "Suspicious",
+  "Likely Scam",
 ]);
 
 export const inputTypeEnum = pgEnum("input_type", ["text", "screenshot"]);
+
+// ─── Better Auth Tables ───────────────────────────────────────────────────────
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -40,7 +42,7 @@ export const user = pgTable("user", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
@@ -52,15 +54,15 @@ export const session = pgTable(
     token: text("token").notNull().unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
-    ipAddress: text("ip_address"),
+    ipAddress: text("ip_address"), // hashed instead of raw IP
     userAgent: text("user_agent"),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
-  (table) => [index("session_userId_idx").on(table.userId)],
+  (table) => [index("session_user_id_idx").on(table.userId)],
 );
 
 export const account = pgTable(
@@ -81,10 +83,10 @@ export const account = pgTable(
     password: text("password"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [index("account_userId_idx").on(table.userId)],
+  (table) => [index("account_user_id_idx").on(table.userId)],
 );
 
 export const verification = pgTable(
@@ -97,21 +99,21 @@ export const verification = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
 // ─── Subscriptions ────────────────────────────────────────────────────────────
-// References Better Auth's `user` table via userId
 
 export const subscriptions = pgTable(
   "subscriptions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    // FK → Better Auth `user.id`
-    userId: text("user_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
     status: subscriptionStatusEnum("status").notNull().default("trialing"),
     planId: text("plan_id"),
     trialStart: timestamp("trial_start", { withTimezone: true })
@@ -125,6 +127,7 @@ export const subscriptions = pgTable(
       .notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => ({
@@ -139,21 +142,27 @@ export const scans = pgTable(
   "scans",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: text("user_id").notNull(),
+
+    // Optional → supports guest users
+    userId: text("user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+
+    deviceFingerprint: text("device_fingerprint"),
+
     inputType: inputTypeEnum("input_type").notNull(),
 
-    // Original input length BEFORE scrubbing — never store the raw input
     inputLength: integer("input_length").notNull(),
 
-    // Only PII-scrubbed content is ever persisted
     scrubbedInput: text("scrubbed_input").notNull(),
 
-    riskScore: integer("risk_score").notNull(), // 0–100
+    riskScore: integer("risk_score").notNull(),
     riskLevel: riskLevelEnum("risk_level").notNull(),
     scamType: text("scam_type"),
     indicatorsDetected: jsonb("indicators_detected").notNull().default([]),
     explanation: text("explanation").notNull(),
     recommendation: text("recommendation").notNull(),
+
     aiProvider: text("ai_provider").notNull(),
 
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -161,15 +170,39 @@ export const scans = pgTable(
       .notNull(),
   },
   (table) => ({
-    userIdIdx: index("scans_user_id_idx").on(table.userId),
+    userIdx: index("scans_user_idx").on(table.userId),
+    deviceIdx: index("scans_device_idx").on(table.deviceFingerprint),
     createdAtIdx: index("scans_created_at_idx").on(table.createdAt),
-    // Optimised for history queries: WHERE user_id = ? ORDER BY created_at DESC
     userCreatedIdx: index("scans_user_created_idx").on(
       table.userId,
       table.createdAt,
     ),
-    // Useful for abuse detection queries: WHERE input_length > N
-    inputLengthIdx: index("scans_input_length_idx").on(table.inputLength),
+  }),
+);
+
+// ─── Reported Scams ───────────────────────────────────────────────────────────
+
+export const reportedScams = pgTable(
+  "reported_scams",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    deviceFingerprint: text("device_fingerprint"),
+    scrubbedInput: text("scrubbed_input").notNull(),
+    riskScore: integer("risk_score").notNull(),
+    scamType: text("scam_type"),
+    indicatorsDetected: jsonb("indicators_detected").notNull().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    typeIdx: index("reported_scams_type_idx").on(
+      table.scamType,
+      table.createdAt,
+    ),
   }),
 );
 
@@ -179,20 +212,16 @@ export const devices = pgTable(
   "devices",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
 
-    // Unique hardware/install identifier (Expo generates this)
     deviceId: text("device_id").notNull(),
-
-    // Firebase Cloud Messaging token for push notifications
-    // Rotates periodically — always upsert, never insert blindly
     fcmToken: text("fcm_token"),
-
-    // Display info for the "active devices" security screen
-    deviceName: text("device_name"), // e.g. "Samsung Galaxy S22"
-    platform: text("platform").notNull(), // 'android' | 'ios'
-    osVersion: text("os_version"), // e.g. "Android 14"
-    appVersion: text("app_version"), // e.g. "1.0.3" — track adoption
+    deviceName: text("device_name"),
+    platform: text("platform").notNull(),
+    osVersion: text("os_version"),
+    appVersion: text("app_version"),
 
     isActive: boolean("is_active").notNull().default(true),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
@@ -203,54 +232,104 @@ export const devices = pgTable(
       .notNull(),
   },
   (table) => ({
-    // One row per physical device per user — upsert on conflict
     userDeviceIdx: uniqueIndex("devices_user_device_idx").on(
       table.userId,
       table.deviceId,
     ),
-    userIdIdx: index("devices_user_id_idx").on(table.userId),
-    fcmTokenIdx: index("devices_fcm_token_idx").on(table.fcmToken),
-    // Fast lookup of active devices for push notifications
-    activeIdx: index("devices_active_idx").on(table.isActive),
+    userIdx: index("devices_user_idx").on(table.userId),
+    lastSeenIdx: index("devices_last_seen_idx").on(table.lastSeenAt),
   }),
 );
 
-// ─── Audit Logs ───────────────────────────────────────────────────────────────
+// ─── Audit Logs (Rate Limiting + Analytics) ───────────────────────────────────
 
 export const auditLogs = pgTable(
   "audit_logs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: text("user_id"), // nullable — pre-auth events (failed logins)
+    userId: text("user_id"),
+    deviceFingerprint: text("device_fingerprint"),
+    ipHash: text("ip_hash"),
     action: text("action").notNull(),
-    // e.g. 'login', 'logout', 'scan_created',
-    //      'subscription_started', 'device_registered',
-    //      'password_reset', 'account_deleted'
-    ipAddress: text("ip_address"),
     metadata: jsonb("metadata").default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (table) => ({
-    userIdIdx: index("audit_logs_user_id_idx").on(table.userId),
-    createdAtIdx: index("audit_logs_created_at_idx").on(table.createdAt),
-    actionIdx: index("audit_logs_action_idx").on(table.action),
+    userIdx: index("audit_logs_user_idx").on(table.userId),
+    deviceIdx: index("audit_logs_device_idx").on(table.deviceFingerprint),
+    createdIdx: index("audit_logs_created_idx").on(table.createdAt),
   }),
 );
 
-// ─── Type exports ─────────────────────────────────────────────────────────────
+// ─── Consent Records ─────────────────────────────────────────────
+// Tracks when a user accepted the Terms and Privacy Policy.
+// Required for GDPR/NDPR compliance evidence.
+
+export const consentRecords = pgTable(
+  "consent_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    termsVersion: text("terms_version").notNull(), // e.g. "1.0"
+    privacyVersion: text("privacy_version").notNull(), // e.g. "1.0"
+    ipHash: text("ip_hash"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdx: index("consent_records_user_idx").on(table.userId),
+    createdIdx: index("consent_records_created_idx").on(table.createdAt),
+  }),
+);
+
+// ─── Privacy Settings ─────────────────────────────────────────────
+// Per-user privacy preferences.
+// One row per user — upsert on update.
+
+export const privacySettings = pgTable("privacy_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  analyticsEnabled: boolean("analytics_enabled").notNull().default(true),
+  scanHistoryEnabled: boolean("scan_history_enabled").notNull().default(true),
+  crashReportingEnabled: boolean("crash_reporting_enabled")
+    .notNull()
+    .default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;
+
 export type Scan = typeof scans.$inferSelect;
 export type NewScan = typeof scans.$inferInsert;
+
+export type ReportedScam = typeof reportedScams.$inferSelect;
+export type NewReportedScam = typeof reportedScams.$inferInsert;
+
 export type Device = typeof devices.$inferSelect;
 export type NewDevice = typeof devices.$inferInsert;
+
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
 
+export type ConsentRecord = typeof consentRecords.$inferSelect;
+export type NewConsentRecord = typeof consentRecords.$inferInsert;
+export type PrivacySettings = typeof privacySettings.$inferSelect;
+export type NewPrivacySettings = typeof privacySettings.$inferInsert;
+
 // ─── Relations ───────────────────────────────────────────────────────────────
+
 export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -260,28 +339,6 @@ export const userRelations = relations(user, ({ many, one }) => ({
   }),
   scans: many(scans),
   devices: many(devices),
-  auditLogs: many(auditLogs),
-}));
-
-export const sessionRelations = relations(session, ({ one }) => ({
-  user: one(user, {
-    fields: [session.userId],
-    references: [user.id],
-  }),
-}));
-
-export const accountRelations = relations(account, ({ one }) => ({
-  user: one(user, {
-    fields: [account.userId],
-    references: [user.id],
-  }),
-}));
-
-export const subscriptionRelations = relations(subscriptions, ({ one }) => ({
-  user: one(user, {
-    fields: [subscriptions.userId],
-    references: [user.id],
-  }),
 }));
 
 export const scanRelations = relations(scans, ({ one }) => ({
@@ -291,16 +348,19 @@ export const scanRelations = relations(scans, ({ one }) => ({
   }),
 }));
 
-export const deviceRelations = relations(devices, ({ one }) => ({
+export const consentRecordRelations = relations(consentRecords, ({ one }) => ({
   user: one(user, {
-    fields: [devices.userId],
+    fields: [consentRecords.userId],
     references: [user.id],
   }),
 }));
 
-export const auditLogRelations = relations(auditLogs, ({ one }) => ({
-  user: one(user, {
-    fields: [auditLogs.userId],
-    references: [user.id],
+export const privacySettingsRelations = relations(
+  privacySettings,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [privacySettings.userId],
+      references: [user.id],
+    }),
   }),
-}));
+);

@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "CommonJS",
+    "module": "Nodenext",
+    "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "../..",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,10 +15,12 @@
     "declarationMap": true,
     "sourceMap": true,
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@scamshieldlite/shared": ["../../packages/shared/scan"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../packages/shared/scan.ts"],
   "exclude": ["node_modules", "dist"]
 }
