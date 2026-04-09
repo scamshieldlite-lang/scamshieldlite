@@ -80,18 +80,3 @@ module.exports = ({ config }) => ({
     },
   },
 });
-
-const apiBaseUrl =
-  process.env.EXPO_PUBLIC_API_BASE_URL ??
-  Constants.expoConfig?.extra?.apiBaseUrl ??
-  "http://localhost:3000";
-
-console.log("[API CONFIG] Base URL:", apiBaseUrl); // debug — remove after fix
-
-export const API_CONFIG = {
-  baseURL: apiBaseUrl,
-  timeout: 12000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-};
