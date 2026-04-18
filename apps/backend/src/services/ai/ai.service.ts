@@ -1,37 +1,55 @@
-// apps/backend/src/services/ai/ai.service.ts
-
 import type { AiProvider } from "./aiProvider.interface";
 import type { ScanResult } from "@scamshieldlite/shared";
 import { GeminiProvider } from "./providers/gemini.provider";
 import { GroqProvider } from "./providers/groq.provider";
+import { OpenAIProvider } from "./providers/openai.provider";
 import { env } from "@/utils/env";
 import { logger } from "@/utils/logger";
 import { ServerError } from "@/utils/errors";
 
-/**
- * AI Service
- *
- * Provider-agnostic facade. All callers use aiService.analyze() —
- * provider selection and fallback are invisible to them.
- *
- * Primary:  Gemini 2.0 Flash (free tier, fast, structured JSON)
- * Fallback: Groq (free tier, ~200ms, good for scam detection)
- */
 class AiService {
-  private primary: AiProvider;
-  private fallback: AiProvider | null;
+  private providers: AiProvider[];
 
   constructor() {
-    // Primary: always Gemini when key is present
-    this.primary = new GeminiProvider();
+    // Build the provider chain based on what keys are configured.
+    // Order: primary first, then fallbacks in sequence.
+    // Only providers with keys configured are included.
+    const chain: AiProvider[] = [];
 
-    // Fallback: Groq if key is configured
-    this.fallback = env.GROQ_API_KEY ? new GroqProvider() : null;
+    // Primary — controlled by AI_PROVIDER env var
+    switch (env.AI_PROVIDER) {
+      case "openai":
+        if (env.OPENAI_API_KEY) chain.push(new OpenAIProvider());
+        if (env.GROQ_API_KEY) chain.push(new GroqProvider());
+        if (env.GEMINI_API_KEY) chain.push(new GeminiProvider());
+        break;
+      case "groq":
+        if (env.GROQ_API_KEY) chain.push(new GroqProvider());
+        if (env.GEMINI_API_KEY) chain.push(new GeminiProvider());
+        if (env.OPENAI_API_KEY) chain.push(new OpenAIProvider());
+        break;
+      case "gemini":
+      default:
+        if (env.GEMINI_API_KEY) chain.push(new GeminiProvider());
+        if (env.GROQ_API_KEY) chain.push(new GroqProvider());
+        if (env.OPENAI_API_KEY) chain.push(new OpenAIProvider());
+        break;
+    }
+
+    if (chain.length === 0) {
+      throw new Error(
+        "No AI providers configured. Set at least one of: OPENAI_API_KEY, GEMINI_API_KEY, GROQ_API_KEY",
+      );
+    }
+
+    this.providers = chain;
 
     logger.info(
       {
-        primary: this.primary.name,
-        fallback: this.fallback?.name ?? "none",
+        primary: chain[0]?.name,
+        fallback: chain[1]?.name ?? "none",
+        reserve: chain[2]?.name ?? "none",
+        totalProviders: chain.length,
       },
       "AI service initialized",
     );
@@ -40,36 +58,37 @@ class AiService {
   async analyze(
     scrubbedText: string,
   ): Promise<ScanResult & { provider: string }> {
-    // Try primary
-    try {
-      const result = await this.primary.analyze(scrubbedText);
-      return { ...result, provider: this.primary.name };
-    } catch (primaryError) {
-      logger.warn(
-        { error: primaryError, provider: this.primary.name },
-        "Primary AI provider failed — attempting fallback",
-      );
-    }
+    const errors: string[] = [];
 
-    // Try fallback
-    if (this.fallback) {
+    // Try each provider in sequence until one succeeds
+    for (const provider of this.providers) {
       try {
-        const result = await this.fallback.analyze(scrubbedText);
-        return { ...result, provider: this.fallback.name };
-      } catch (fallbackError) {
-        logger.error(
-          { error: fallbackError, provider: this.fallback.name },
-          "Fallback AI provider also failed",
+        const result = await provider.analyze(scrubbedText);
+        return { ...result, provider: provider.name };
+      } catch (error: any) {
+        const message = error?.message ?? String(error);
+        errors.push(`${provider.name}: ${message}`);
+
+        logger.warn(
+          {
+            provider: provider.name,
+            error: message,
+            nextProvider:
+              this.providers[this.providers.indexOf(provider) + 1]?.name ??
+              "none — all providers exhausted",
+          },
+          "AI provider failed — trying next",
         );
       }
     }
 
-    // Both failed
+    // All providers failed
+    logger.error({ errors }, "All AI providers failed");
+
     throw new ServerError(
-      "Detection service is temporarily unavailable. Please try again.",
+      "Detection service is temporarily unavailable. Please try again in a moment.",
     );
   }
 }
 
-// Singleton — instantiated once at startup
 export const aiService = new AiService();
