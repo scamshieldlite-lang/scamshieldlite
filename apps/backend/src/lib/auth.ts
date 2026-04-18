@@ -20,9 +20,9 @@ export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL.replace(/\/api\/auth\/?$/, ""),
 
   trustedOrigins: [
-    "http://192.168.43.93:3000",
-    "http://192.168.43.93:8081",
-    "exp://192.168.43.93:8081",
+    "http://192.168.43.92:3000",
+    "http://192.168.43.92:8081",
+    "exp://192.168.43.92:8081",
     "http://localhost:3000",
     "http://localhost:8081",
     "exp://localhost:8081",
@@ -53,6 +53,10 @@ export const auth = betterAuth({
       // ✅ Handle everything in one place
       if (ctx.path === "/sign-up/email" && ctx.context.newSession) {
         try {
+          logger.info(
+            { availableKeys: Object.keys(ctx) },
+            "Post-signup hook context keys",
+          );
           const userId =
             ctx.context.newSession?.user?.id ??
             (ctx.context as any).user?.id ??

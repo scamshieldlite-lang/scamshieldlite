@@ -12,6 +12,6 @@ export const API_CONFIG = {
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
-    Origin: "http://192.168.43.93:3000",
+    Origin: "http://192.168.43.92:3000",
   },
 } as const;

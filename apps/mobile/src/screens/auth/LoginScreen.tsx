@@ -64,14 +64,29 @@ export default function LoginScreen({ navigation }: Props) {
         return;
       }
 
+      const status = err?.response?.status;
+      const rawMessage = (
+        err?.response?.data?.message ??
+        err?.response?.data?.error ??
+        ""
+      ).toLowerCase();
+
+      // 401 from Better Auth always means wrong credentials
+      if (status === 401) {
+        setErrors({ password: "Incorrect email or password" });
+        return;
+      }
+
       const message = extractErrorMessage(err);
       if (
-        message.toLowerCase().includes("invalid") ||
-        message.toLowerCase().includes("credentials") ||
-        message.toLowerCase().includes("password")
+        rawMessage.includes("invalid") ||
+        rawMessage.includes("credentials") ||
+        rawMessage.includes("password") ||
+        rawMessage.includes("not found") ||
+        rawMessage.includes("no user")
       ) {
         setErrors({ password: "Incorrect email or password" });
-      } else if (message.toLowerCase().includes("not found")) {
+      } else if (rawMessage.includes("email")) {
         setErrors({ email: "No account found with this email" });
       } else {
         setErrors({ general: message });

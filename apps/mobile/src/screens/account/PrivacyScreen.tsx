@@ -182,28 +182,37 @@ export default function PrivacyScreen({ navigation }: Props) {
     );
   }, [logout]);
 
-  const handleExportData = useCallback(() => {
-    Alert.alert(
-      "Export your data",
-      "Your data will be prepared as a JSON file. This may take a moment.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Export",
-          onPress: async () => {
-            try {
-              await privacyService.exportData();
-              Alert.alert(
-                "Export ready",
-                "Your data has been prepared. Check your downloads folder.",
-              );
-            } catch (err) {
-              Alert.alert("Error", extractErrorMessage(err));
-            }
-          },
-        },
-      ],
-    );
+  // const handleExportData = useCallback(() => {
+  //   Alert.alert(
+  //     "Export your data",
+  //     "Your data will be prepared as a JSON file. This may take a moment.",
+  //     [
+  //       { text: "Cancel", style: "cancel" },
+  //       {
+  //         text: "Export",
+  //         onPress: async () => {
+  //           try {
+  //             await privacyService.exportData();
+  //             Alert.alert(
+  //               "Export ready",
+  //               "Your data has been prepared. Check your downloads folder.",
+  //             );
+  //           } catch (err) {
+  //             Alert.alert("Error", extractErrorMessage(err));
+  //           }
+  //         },
+  //       },
+  //     ],
+  //   );
+  // }, []);
+
+  const handleExportData = useCallback(async () => {
+    try {
+      await privacyService.exportData();
+      // Share sheet handles the rest — no success alert needed
+    } catch (err) {
+      Alert.alert("Export failed", extractErrorMessage(err));
+    }
   }, []);
 
   if (isLoading) {
@@ -329,13 +338,21 @@ export default function PrivacyScreen({ navigation }: Props) {
           <View style={styles.consentRow}>
             <Text style={styles.consentLabel}>Terms accepted</Text>
             <Text style={styles.consentValue}>
-              v{consent?.termsVersion ?? "—"} · {consentDate}
+              {consent
+                ? `v${consent.termsVersion} · ${new Date(
+                    consent.acceptedAt,
+                  ).toLocaleDateString("en-NG", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}`
+                : "Not recorded"}
             </Text>
           </View>
-          <View style={styles.consentRow}>
+          <View style={[styles.consentRow, { borderBottomWidth: 0 }]}>
             <Text style={styles.consentLabel}>Privacy policy accepted</Text>
             <Text style={styles.consentValue}>
-              v{consent?.privacyVersion ?? "—"}
+              {consent ? `v${consent.privacyVersion}` : "Not recorded"}
             </Text>
           </View>
         </View>
@@ -347,12 +364,12 @@ export default function PrivacyScreen({ navigation }: Props) {
             {
               label: "Privacy Policy",
               icon: "🔏",
-              url: "https://scamshieldlite.app/privacy",
+              url: "https://doc-hosting.flycricket.io/scamshieldlite-privacy-policy/1a50d1c4-f5d4-46f5-b6eb-54bf8363e2e3/privacy",
             },
             {
               label: "Terms of Service",
               icon: "📄",
-              url: "https://scamshieldlite.app/terms",
+              url: "https://doc-hosting.flycricket.io/scamshieldlite-terms-of-use/16678d7b-0f26-46f8-b7c1-6f31d46b3aaa/terms",
             },
             {
               label: "Cookie Policy",

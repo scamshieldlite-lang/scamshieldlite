@@ -45,6 +45,6 @@ export type ProductId = (typeof PRODUCT_IDS)[keyof typeof PRODUCT_IDS];
 
 // Pricing display — update to match your Play Console prices
 export const PRODUCT_PRICES: Record<ProductId, string> = {
-  [PRODUCT_IDS.MONTHLY]: "₦1,500/month",
-  [PRODUCT_IDS.YEARLY]: "₦12,000/year",
+  [PRODUCT_IDS.MONTHLY]: "$9.99/month",
+  [PRODUCT_IDS.YEARLY]: "$109.88/year",
 };

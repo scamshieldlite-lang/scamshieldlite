@@ -20,6 +20,7 @@ import { Colors } from "@/constants/colors";
 import type { ScanResponse } from "@scamshieldlite/shared/";
 import { NormalizedHistoryItem } from "@/services/scan.service";
 import AuthGuard from "@/components/AuthGuard";
+import TrialExpiryBanner from "@/components/TrialExpiryBanner";
 
 type NavProp = NativeStackNavigationProp<AppStackParamList>;
 
@@ -157,6 +158,7 @@ export default function HistoryScreen() {
   // ── List ───────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
+      <TrialExpiryBanner />
       <View style={styles.titleRow}>
         <Text style={styles.title}>History</Text>
         <Text style={styles.count}>

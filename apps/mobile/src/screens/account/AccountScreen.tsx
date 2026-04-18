@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,12 +19,11 @@ import {
   CompositeNavigationProp,
   useNavigation,
 } from "@react-navigation/native";
-import type {
-  NativeStackNavigationProp,
-  NativeStackScreenProps,
-} from "@react-navigation/native-stack";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "@/navigation/AppStack";
 import { AccountStackParamList } from "@/navigation/AccountStack";
+import { useSubscriptionContext } from "@/context/SubscriptionContext";
+import TrialExpiryBanner from "@/components/TrialExpiryBanner";
 
 // ── Info row — reusable within this screen ────────────────────────
 interface InfoRowProps {
@@ -138,6 +138,9 @@ export default function AccountScreen() {
     );
   }, []);
 
+  const { subscription } = useSubscriptionContext();
+  const isPaid = subscription?.status === "active";
+
   // const navigation =
   //   useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   return (
@@ -148,6 +151,7 @@ export default function AccountScreen() {
 
       {/* AuthGuard wraps the authenticated content */}
       <AuthGuard message="Sign in to manage your account and subscription.">
+        <TrialExpiryBanner />
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
@@ -176,21 +180,29 @@ export default function AccountScreen() {
           {/* Usage section */}
           <SectionHeader title="Usage today" />
           <View style={styles.card}>
-            {usage && (
-              <View style={styles.progressBarContainer}>
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    {
-                      width: `${(usage.scansToday / usage.scanLimit) * 100}%`,
-                      backgroundColor:
-                        usage.scansRemaining <= 1
-                          ? Colors.scam
-                          : Colors.primary,
-                    },
-                  ]}
+            {usage ? (
+              <>
+                <InfoRow
+                  label="Scans used"
+                  value={`${usage.scansToday} of ${usage.scanLimit}`}
+                  valueColor={
+                    usage.isGuest ? Colors.suspicious : Colors.primary
+                  }
                 />
-              </View>
+                <InfoRow
+                  label="Scans remaining"
+                  value={`${usage.scansRemaining}`} // ← wrap in template literal to ensure string
+                  valueColor={
+                    usage.scansRemaining === 0
+                      ? Colors.scam
+                      : usage.scansRemaining <= 2
+                        ? Colors.suspicious
+                        : Colors.safe
+                  }
+                />
+              </>
+            ) : (
+              <ActivityIndicator color={Colors.primary} style={styles.loader} />
             )}
           </View>
           {/* Subscription section */}
@@ -209,6 +221,19 @@ export default function AccountScreen() {
             >
               <Text style={styles.subscribeButtonText}>⭐ Upgrade to Pro</Text>
             </TouchableOpacity>
+            {/* // Add this below it if user has an active subscription: */}
+            {isPaid && (
+              <TouchableOpacity
+                style={styles.manageButton}
+                onPress={() =>
+                  Linking.openURL(
+                    "https://play.google.com/store/account/subscriptions?package=com.scamshieldlite.app",
+                  )
+                }
+              >
+                <Text style={styles.manageButtonText}>Manage subscription</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Account actions */}
@@ -371,5 +396,18 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: "center",
     marginTop: 8,
+  },
+  manageButton: {
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  manageButtonText: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "500",
   },
 });

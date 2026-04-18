@@ -19,7 +19,7 @@ export const consentService = {
   async recordConsent(
     userId: string,
     ip?: string,
-    userAgent?: string
+    userAgent?: string,
   ): Promise<void> {
     await db.insert(consentRecords).values({
       userId,
@@ -35,7 +35,7 @@ export const consentService = {
         termsVersion: CURRENT_TERMS_VERSION,
         privacyVersion: CURRENT_PRIVACY_VERSION,
       },
-      "Consent recorded"
+      "Consent recorded",
     );
   },
 
@@ -100,7 +100,7 @@ export const consentService = {
       analyticsEnabled: boolean;
       scanHistoryEnabled: boolean;
       crashReportingEnabled: boolean;
-    }>
+    }>,
   ) {
     await db
       .insert(privacySettings)

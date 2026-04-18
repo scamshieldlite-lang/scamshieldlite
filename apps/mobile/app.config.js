@@ -33,6 +33,7 @@ module.exports = ({ config }) => ({
   plugins: [
     "expo-secure-store",
     "react-native-iap",
+    "expo-sharing",
     // "expo-device",
     [
       "expo-image-picker",

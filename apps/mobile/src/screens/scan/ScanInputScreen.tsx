@@ -30,8 +30,9 @@ import ScreenshotInput from "@/components/ScreenshotInput";
 
 import { Colors } from "@/constants/colors";
 import { INPUT_LIMITS } from "@/constants/limits";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import TrialExpiryBanner from "@/components/TrialExpiryBanner";
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<BottomTabParamList, "Scan">,
@@ -59,6 +60,15 @@ export default function ScanInputScreen({ navigation }: Props) {
   useEffect(() => {
     if (isRateLimited) setShowUpgradeModal(true);
   }, [isRateLimited]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Clear input whenever this screen comes into focus
+      // (after returning from result screen)
+      setText("");
+      clearError();
+    }, [clearError]),
+  );
 
   // Shared scan trigger — used by both text and screenshot paths
   const triggerScan = useCallback(
@@ -125,6 +135,7 @@ export default function ScanInputScreen({ navigation }: Props) {
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
+        <TrialExpiryBanner />
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
@@ -416,6 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceHigh,
     shadowOpacity: 0,
     elevation: 0,
+    opacity: 0.5,
   },
   analyzeButtonText: {
     color: Colors.white,

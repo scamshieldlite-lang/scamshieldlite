@@ -12,6 +12,7 @@ import type {
   VerifyPurchaseResponse,
   SubscriptionStatusResponse,
 } from "@scamshieldlite/shared/";
+import { consentService } from "@/services/consent.service.js";
 
 const verifyPurchaseSchema = z.object({
   purchaseToken: z.string().min(1, "purchaseToken is required"),
@@ -53,6 +54,27 @@ export const subscriptionController = {
         logger.info(
           { userId: req.user.id },
           "Trial subscription created via ensure-trial",
+        );
+      }
+
+      const existingConsent = await consentService.getLatestConsent(
+        req.user.id,
+      );
+      if (!existingConsent) {
+        const ip = (
+          (req.headers["x-forwarded-for"] as string) ??
+          req.socket.remoteAddress ??
+          "127.0.0.1"
+        )
+          ?.split(",")[0]
+          ?.trim();
+        const ua = (req.headers["user-agent"] as string) ?? "unknown";
+
+        await consentService.recordConsent(req.user.id, ip, ua);
+
+        logger.info(
+          { userId: req.user.id },
+          "Consent recorded via ensure-trial fallback",
         );
       }
 

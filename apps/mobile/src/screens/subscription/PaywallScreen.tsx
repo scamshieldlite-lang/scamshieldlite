@@ -17,6 +17,7 @@ import {
   type ProductId,
 } from "@shared/subscription";
 import { Colors } from "@/constants/colors";
+import { useNavigation } from "@react-navigation/native";
 
 const FEATURES = [
   "🛡️  Unlimited scam analysis",
@@ -113,19 +114,23 @@ export default function PaywallScreen({
       ? `${subscription.daysRemaining} day${subscription.daysRemaining !== 1 ? "s" : ""} left in your free trial`
       : null;
 
+  const navigation = useNavigation();
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       {/* Header */}
       <View style={styles.header}>
-        {onDismiss && (
-          <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
-            <Text style={styles.closeText}>✕</Text>
-          </TouchableOpacity>
-        )}
         <Text style={styles.title}>ScamShieldLite Pro</Text>
         <Text style={styles.subtitle}>
           Protect yourself from scams every day
         </Text>
+
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.closeButtonWrapper} // 👈 Apply the wrapper style here
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
+          <Text style={styles.closeText}>✕</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -227,32 +232,50 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    padding: 24,
-    alignItems: "center",
-    gap: 6,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
     borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 24,
-    right: 20,
-    padding: 4,
-  },
-  closeText: {
-    color: Colors.textMuted,
-    fontSize: 18,
+    // This allows us to position the X without breaking the center text
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 26,
     fontWeight: "800",
     color: Colors.textPrimary,
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 14,
     color: Colors.textSecondary,
     textAlign: "center",
+    marginTop: 4,
   },
+  // This targets the TouchableOpacity wrapping the ✕
+  closeButtonWrapper: {
+    position: "absolute",
+    top: 10,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surfaceHigh || "#f0f0f0",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
+  closeText: {
+    color: Colors.textPrimary, // Use Primary instead of Muted for visibility
+    fontSize: 20,
+    fontWeight: "600",
+    // Centers the ✕ character perfectly
+    lineHeight: 22,
+    textAlign: "center",
+  },
+
   content: {
     padding: 20,
     paddingBottom: 40,

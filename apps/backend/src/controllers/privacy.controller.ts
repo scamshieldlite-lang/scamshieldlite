@@ -1,5 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
-import { consentService } from "@/services/consent.service";
+import {
+  consentService,
+  CURRENT_PRIVACY_VERSION,
+  CURRENT_TERMS_VERSION,
+} from "@/services/consent.service";
 import { userDataService } from "@/services/userData.service";
 import { UnauthorizedError, InvalidInputError } from "@/utils/errors";
 import { z } from "zod";
@@ -28,12 +32,12 @@ export const privacyController = {
           ? {
               termsVersion: consent.termsVersion,
               privacyVersion: consent.privacyVersion,
-              acceptedAt: consent.createdAt,
+              acceptedAt: consent.createdAt.toISOString(),
             }
           : null,
         currentVersions: {
-          terms: "1.0",
-          privacy: "1.0",
+          terms: CURRENT_TERMS_VERSION,
+          privacy: CURRENT_PRIVACY_VERSION,
         },
       });
     } catch (error) {
@@ -98,14 +102,14 @@ export const privacyController = {
       const data = await userDataService.exportUserData(req.user.id);
 
       // Set headers to trigger file download
-      res
-        .status(200)
-        .attachment(`scamshieldlite-data-${req.user.id.slice(0, 8)}.json`)
-        .json(data);
+      // res
+      //   .status(200)
+      //   .attachment(`scamshieldlite-data-${req.user.id.slice(0, 8)}.json`)
+      //   .json(data);
 
       logger.info({ userId: req.user.id }, "User data export requested");
 
-      res.json(data);
+      res.status(200).json(data);
     } catch (error) {
       next(error);
     }

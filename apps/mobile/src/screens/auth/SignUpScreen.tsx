@@ -82,10 +82,18 @@ export default function SignUpScreen({ navigation }: Props) {
       }
 
       const message = extractErrorMessage(err);
+      const rawMessage = (
+        err?.response?.data?.message ??
+        err?.response?.data?.error ??
+        message
+      ).toLowerCase();
 
       if (
-        message.toLowerCase().includes("already") ||
-        message.toLowerCase().includes("exists")
+        rawMessage.includes("already") ||
+        rawMessage.includes("exists") ||
+        rawMessage.includes("email") ||
+        err?.response?.status === 422 ||
+        err?.response?.status === 409
       ) {
         setErrors({
           email: "An account with this email already exists",
