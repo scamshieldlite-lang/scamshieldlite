@@ -8,6 +8,8 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "build": "pnpm --filter backend build",
+    "start": "pnpm --filter backend start",
     "dev:backend": "pnpm --filter backend dev",
     "dev:mobile": "pnpm --filter mobile dev",
     "build:backend": "pnpm --filter backend build",
