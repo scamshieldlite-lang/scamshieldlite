@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1774353855471,
-      "tag": "0000_nosy_iron_monger",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1774820259890,
-      "tag": "0001_woozy_swarm",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1775373830873,
-      "tag": "0002_lovely_sunfire",
+      "when": 1776546681563,
+      "tag": "0000_shiny_domino",
       "breakpoints": true
     }
   ]

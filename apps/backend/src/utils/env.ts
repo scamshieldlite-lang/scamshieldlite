@@ -27,9 +27,10 @@ const envSchema = z.object({
 
   // AI Providers
   AI_PROVIDER: z
-    .enum(["puter", "openai", "anthropic", "gemini"])
-    .default("puter"),
+    .enum(["openai", "groq", "anthropic", "gemini"])
+    .default("openai"),
   OPENAI_API_KEY: z.string().optional(),
+  GROQ_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
 
@@ -46,8 +47,8 @@ const envSchema = z.object({
   // AI Configuration
   AI_GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
   AI_GEMINI_MAX_TOKENS: z.coerce.number().default(2048),
-  GROQ_API_KEY: z.string().optional(),
   GROQ_MODEL: z.string().default("llama-3.3-70b-versatile"),
+  OPENAI_MODEL: z.string().default("gpt-4o-mini"),
   AI_TIMEOUT_MS: z.coerce.number().default(8000),
   AI_MAX_INPUT_LENGTH: z.coerce.number().default(3000),
 
