@@ -16,16 +16,17 @@ async function bootstrap(): Promise<void> {
   const app = createApp();
 
   // 3. Start listening
-  const server = app.listen(env.PORT, () => {
-    const host =
+  const host = env.NODE_ENV === "production" ? "0.0.0.0" : env.SERVER_HOST;
+  const server = app.listen(env.PORT, host, () => {
+    const displayUrl =
       env.NODE_ENV === "production"
         ? env.BETTER_AUTH_URL
-        : `http://localhost:${env.PORT}`;
+        : `http://${host}:${env.PORT}`;
     logger.info(
       {
         port: env.PORT,
         env: env.NODE_ENV,
-        url: host,
+        url: displayUrl,
       },
       "🛡️  ScamShieldLite backend running",
     );
