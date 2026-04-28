@@ -3,9 +3,6 @@ import { db } from "@/db";
 import { logger } from "@/utils/logger";
 
 const router: Router = Router();
-router.get("/", (_req: Request, res: Response) => {
-  res.status(200).json({ status: "ok" });
-});
 
 // router.get("/", async (_req: Request, res: Response) => {
 //   try {
@@ -27,5 +24,22 @@ router.get("/", (_req: Request, res: Response) => {
 //     });
 //   }
 // });
+
+router.get("/", (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
+router.get("/db", async (_req: Request, res: Response) => {
+  try {
+    await db.execute("SELECT 1" as any);
+    res.json({ status: "db-ok" });
+  } catch {
+    res.status(503).json({ status: "db-error" });
+  }
+});
 
 export default router;

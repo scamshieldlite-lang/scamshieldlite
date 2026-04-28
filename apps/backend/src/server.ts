@@ -9,28 +9,29 @@ import {
 
 async function bootstrap(): Promise<void> {
   // 1. Verify DB before accepting traffic
-  await testDbConnection();
-  startRetentionScheduler();
-
-  // 2. Create Express app
   const app = createApp();
 
-  // 3. Start listening
   const host = env.NODE_ENV === "production" ? "0.0.0.0" : env.SERVER_HOST;
+
   const server = app.listen(env.PORT, host, () => {
-    const displayUrl =
-      env.NODE_ENV === "production"
-        ? env.BETTER_AUTH_URL
-        : `http://${host}:${env.PORT}`;
     logger.info(
       {
         port: env.PORT,
         env: env.NODE_ENV,
-        url: displayUrl,
       },
-      "🛡️  ScamShieldLite backend running",
+      "🛡️ Server running",
     );
   });
+
+  // Run async stuff AFTER server starts
+  testDbConnection()
+    .then(() => {
+      logger.info("✅ DB connected");
+      startRetentionScheduler();
+    })
+    .catch((err) => {
+      logger.error({ err }, "❌ DB connection failed");
+    });
 
   // 4. Graceful shutdown — finish in-flight requests before exiting
   const shutdown = (signal: string) => {
