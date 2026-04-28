@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 
 declare global {
   namespace Express {
@@ -14,6 +14,6 @@ export function requestId(
   _res: Response,
   next: NextFunction,
 ): void {
-  req.id = (req.headers["x-request-id"] as string) ?? uuidv4();
+  req.id = (req.headers["x-request-id"] as string) ?? randomUUID();
   next();
 }
