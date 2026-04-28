@@ -24,7 +24,10 @@ export async function testDbConnection(): Promise<void> {
     await queryClient`SELECT 1`;
     logger.info("Database connection established");
   } catch (error) {
-    logger.error("Database connection failed", error);
+    logger.error(
+      error instanceof Error ? error : new Error(String(error)),
+      "Database connection failed",
+    );
     process.exit(1);
   }
 }

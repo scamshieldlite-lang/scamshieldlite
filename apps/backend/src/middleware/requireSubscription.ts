@@ -57,7 +57,10 @@ export async function requireSubscription(
       trialExpired: subscription.status === "trialing",
     });
   } catch (error) {
-    logger.error("Subscription middleware error", error);
+    logger.error(
+      error instanceof Error ? error : new Error(String(error)),
+      "Database connection failed",
+    );
     res.status(500).json({ success: false, error: "Internal server error." });
   }
 }

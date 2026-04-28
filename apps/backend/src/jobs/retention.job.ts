@@ -5,22 +5,22 @@ import { logger } from "@/utils/logger";
 
 const EVERY_24_HOURS = 24 * 60 * 60 * 1000;
 
-let schedulerHandle: NodeJS.Timeout | null = null;
+let timer: ReturnType<typeof setInterval> | null = null;
 
 export function startRetentionScheduler(): void {
   // Run once at startup (catches any backlog)
   runJob();
 
   // Then every 24 hours
-  schedulerHandle = setInterval(runJob, EVERY_24_HOURS);
+  timer = setInterval(runJob, EVERY_24_HOURS);
 
   logger.info("Retention scheduler started — runs every 24h");
 }
 
 export function stopRetentionScheduler(): void {
-  if (schedulerHandle) {
-    clearInterval(schedulerHandle);
-    schedulerHandle = null;
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
     logger.info("Retention scheduler stopped");
   }
 }
@@ -30,6 +30,9 @@ async function runJob(): Promise<void> {
     await retentionService.runAll();
   } catch (error) {
     // Non-fatal — log and continue
-    logger.error({ error }, "Retention job threw unexpectedly");
+    logger.error(
+      error instanceof Error ? error : new Error(String(error)),
+      "Retention job threw unexpectedly",
+    );
   }
 }
