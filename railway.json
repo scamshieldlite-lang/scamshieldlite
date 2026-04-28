@@ -5,7 +5,7 @@
     "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter backend build"
   },
   "deploy": {
-    "startCommand": "cd apps/backend && node dist/server.js",
+    "startCommand": "node apps/backend/dist/apps/backend/src/server.js",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 60,
     "restartPolicyType": "ON_FAILURE",
