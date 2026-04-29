@@ -1,1 +1,0 @@
-{"version":3,"file":"subscription.js","sourceRoot":"","sources":["../../../../../../packages/shared/src/subscription.ts"],"names":[],"mappings":";AAAA,kCAAkC;;;AAqClC,4DAA4D;AAC/C,QAAA,WAAW,GAAG;IACzB,OAAO,EAAE,wBAAwB;IACjC,MAAM,EAAE,uBAAuB;CACvB,CAAC;AAIX,6DAA6D;AAChD,QAAA,cAAc,GAA8B;IACvD,CAAC,mBAAW,CAAC,OAAO,CAAC,EAAE,aAAa;IACpC,CAAC,mBAAW,CAAC,MAAM,CAAC,EAAE,cAAc;CACrC,CAAC"}
