@@ -1,7 +1,7 @@
 // apps/backend/src/jobs/retention.job.ts
 
-import { retentionService } from "@/services/retention.service";
-import { logger } from "@/utils/logger";
+import { retentionService } from "@/services/retention.service.js";
+import { logger } from "@/utils/logger.js";
 
 const EVERY_24_HOURS = 24 * 60 * 60 * 1000;
 

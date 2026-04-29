@@ -1,10 +1,10 @@
 import { Router } from "express";
-import healthRouter from "./health.route";
-import scanRouter from "./scan.route";
-import reportRouter from "./report.route";
-import subscriptionRouter from "./subscription.route";
-import privacyRouter from "./privacy.route";
-import { auth } from "@/lib/auth";
+import healthRouter from "./health.route.js";
+import scanRouter from "./scan.route.js";
+import reportRouter from "./report.route.js";
+import subscriptionRouter from "./subscription.route.js";
+import privacyRouter from "./privacy.route.js";
+import { auth } from "@/lib/auth.js";
 import { toNodeHandler } from "better-auth/node";
 
 const router: Router = Router();

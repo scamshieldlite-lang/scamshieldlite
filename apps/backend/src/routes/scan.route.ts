@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { optionalAuth } from "@/middleware/optionalAuth";
-import { requireAuth } from "@/middleware/requireAuth";
-import { rateLimitMiddleware } from "@/middleware/rateLimit";
-import { scanController } from "@/controllers/scan.controller";
+import { optionalAuth } from "@/middleware/optionalAuth.js";
+import { requireAuth } from "@/middleware/requireAuth.js";
+import { rateLimitMiddleware } from "@/middleware/rateLimit.js";
+import { scanController } from "@/controllers/scan.controller.js";
 
 const router: Router = Router();
 

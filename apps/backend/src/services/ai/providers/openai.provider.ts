@@ -1,10 +1,10 @@
 import OpenAI from "openai";
-import type { AiProvider } from "../aiProvider.interface";
+import type { AiProvider } from "../aiProvider.interface.js";
 import type { ScanResult } from "@scamshieldlite/shared";
-import { SYSTEM_PROMPT, buildUserPrompt } from "../prompt";
-import { validateAiResponse } from "../aiResponse.validator";
-import { env } from "@/utils/env";
-import { logger } from "@/utils/logger";
+import { SYSTEM_PROMPT, buildUserPrompt } from "../prompt.js";
+import { validateAiResponse } from "../aiResponse.validator.js";
+import { env } from "@/utils/env.js";
+import { logger } from "@/utils/logger.js";
 
 export class OpenAIProvider implements AiProvider {
   readonly name: string;

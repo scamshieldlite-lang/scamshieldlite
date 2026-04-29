@@ -1,22 +1,22 @@
 // apps/backend/src/controllers/scan.controller.ts
 
 import type { Request, Response, NextFunction } from "express";
-import { detectionService } from "@/services/detection.service";
-import { rateLimitService } from "@/services/rateLimit.service";
-import { db } from "@/db";
-import { scans } from "@/db/schema";
+import { detectionService } from "@/services/detection.service.js";
+import { rateLimitService } from "@/services/rateLimit.service.js";
+import { db } from "@/db/index.js";
+import { scans } from "@/db/schema.js";
 import { desc, eq } from "drizzle-orm";
-import { hashIp } from "@/utils/hash";
-import { requireAuth } from "@/middleware/requireAuth";
-import { InvalidInputError } from "@/utils/errors";
+import { hashIp } from "@/utils/hash.js";
+import { requireAuth } from "@/middleware/requireAuth.js";
+import { InvalidInputError } from "@/utils/errors.js";
 import type {
   ScanRequest,
   ScanResponse,
   UsageSummary,
 } from "@scamshieldlite/shared";
-import { subscriptionService } from "@/services/subscription.service";
-import { logger } from "@/utils/logger";
-import { env } from "@/utils/env";
+import { subscriptionService } from "@/services/subscription.service.js";
+import { logger } from "@/utils/logger.js";
+import { env } from "@/utils/env.js";
 
 export const scanController = {
   /**

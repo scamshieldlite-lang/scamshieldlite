@@ -1,10 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
-import { reportService } from "@/services/report.service";
-import { reportRequestSchema } from "@/validators/report.validator";
-import { InvalidInputError } from "@/utils/errors";
-import { auditLogService } from "@/services/auditLog.service";
-import { hashIp } from "@/utils/hash";
-import { logger } from "@/utils/logger";
+import { reportService } from "@/services/report.service.js";
+import { reportRequestSchema } from "@/validators/report.validator.js";
+import { InvalidInputError } from "@/utils/errors.js";
+import { auditLogService } from "@/services/auditLog.service.js";
+import { hashIp } from "@/utils/hash.js";
+import { logger } from "@/utils/logger.js";
 import type { ReportResponse } from "@scamshieldlite/shared/";
 
 export const reportController = {

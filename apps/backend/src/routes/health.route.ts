@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import { db } from "@/db";
-import { logger } from "@/utils/logger";
+import { db } from "@/db/index.js";
+import { logger } from "@/utils/logger.js";
 
 const router: Router = Router();
 

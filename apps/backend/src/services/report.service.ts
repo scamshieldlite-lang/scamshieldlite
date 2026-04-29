@@ -1,10 +1,10 @@
-import { db } from "@/db";
-import { reportedScams } from "@/db/schema";
+import { db } from "@/db/index.js";
+import { reportedScams } from "@/db/schema.js";
 import { and, eq, gte, or } from "drizzle-orm";
-import { scrubPii } from "./pii/piiScrubber.service";
-import { hashIp } from "@/utils/hash";
-import { logger } from "@/utils/logger";
-import type { ValidatedReportRequest } from "@/validators/report.validator";
+import { scrubPii } from "./pii/piiScrubber.service.js";
+import { hashIp } from "@/utils/hash.js";
+import { logger } from "@/utils/logger.js";
+import type { ValidatedReportRequest } from "@/validators/report.validator.js";
 
 export interface SubmitReportParams {
   data: ValidatedReportRequest;

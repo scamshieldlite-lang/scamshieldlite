@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { AppError } from "@/utils/errors";
-import { logger } from "@/utils/logger";
+import { AppError } from "@/utils/errors.js";
+import { logger } from "@/utils/logger.js";
 import type { ApiError } from "@scamshieldlite/shared";
 
 export function errorHandler(

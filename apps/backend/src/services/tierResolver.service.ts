@@ -1,8 +1,8 @@
 // apps/backend/src/services/tierResolver.service.ts
 
-import { subscriptionService } from "./subscription.service";
-import type { UserTier } from "@/config/rateLimits";
-import { logger } from "@/utils/logger";
+import { subscriptionService } from "./subscription.service.js";
+import type { UserTier } from "@/config/rateLimits.js";
+import { logger } from "@/utils/logger.js";
 
 export const tierResolverService = {
   /**

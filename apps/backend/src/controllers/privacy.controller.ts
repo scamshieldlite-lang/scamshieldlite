@@ -3,11 +3,11 @@ import {
   consentService,
   CURRENT_PRIVACY_VERSION,
   CURRENT_TERMS_VERSION,
-} from "@/services/consent.service";
-import { userDataService } from "@/services/userData.service";
-import { UnauthorizedError, InvalidInputError } from "@/utils/errors";
+} from "@/services/consent.service.js";
+import { userDataService } from "@/services/userData.service.js";
+import { UnauthorizedError, InvalidInputError } from "@/utils/errors.js";
 import { z } from "zod";
-import { logger } from "@/utils/logger";
+import { logger } from "@/utils/logger.js";
 
 const updateSettingsSchema = z.object({
   analyticsEnabled: z.boolean().optional(),

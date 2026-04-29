@@ -1,9 +1,9 @@
 // apps/backend/src/middleware/rateLimit.ts
 
 import type { Request, Response, NextFunction } from "express";
-import { rateLimitService } from "@/services/rateLimit.service";
-import { RateLimitError } from "@/utils/errors";
-import { logger } from "@/utils/logger";
+import { rateLimitService } from "@/services/rateLimit.service.js";
+import { RateLimitError } from "@/utils/errors.js";
+import { logger } from "@/utils/logger.js";
 
 declare global {
   namespace Express {

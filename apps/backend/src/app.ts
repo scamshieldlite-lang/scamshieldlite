@@ -9,11 +9,11 @@ import helmet from "helmet";
 import cors from "cors";
 import compression from "compression";
 import morgan from "morgan";
-import { env } from "@/utils/env";
-import { logger } from "@/utils/logger";
-import { requestId } from "@/middleware/requestId";
-import { errorHandler } from "@/middleware/errorHandler";
-import apiRouter from "@/routes/index";
+import { env } from "@/utils/env.js";
+import { logger } from "@/utils/logger.js";
+import { requestId } from "@/middleware/requestId.js";
+import { errorHandler } from "@/middleware/errorHandler.js";
+import apiRouter from "@/routes/index.js";
 
 export function createApp(): Application {
   const app = express();

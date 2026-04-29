@@ -1,11 +1,11 @@
-import type { AiProvider } from "./aiProvider.interface";
+import type { AiProvider } from "./aiProvider.interface.js";
 import type { ScanResult } from "@scamshieldlite/shared";
-import { GeminiProvider } from "./providers/gemini.provider";
-import { GroqProvider } from "./providers/groq.provider";
-import { OpenAIProvider } from "./providers/openai.provider";
-import { env } from "@/utils/env";
-import { logger } from "@/utils/logger";
-import { ServerError } from "@/utils/errors";
+import { GeminiProvider } from "./providers/gemini.provider.js";
+import { GroqProvider } from "./providers/groq.provider.js";
+import { OpenAIProvider } from "./providers/openai.provider.js";
+import { env } from "@/utils/env.js";
+import { logger } from "@/utils/logger.js";
+import { ServerError } from "@/utils/errors.js";
 
 class AiService {
   private providers: AiProvider[];

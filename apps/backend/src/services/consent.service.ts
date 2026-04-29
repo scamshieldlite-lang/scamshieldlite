@@ -1,10 +1,10 @@
 // apps/backend/src/services/consent.service.ts
 
-import { db } from "@/db";
-import { consentRecords, privacySettings } from "@/db/schema";
+import { db } from "@/db/index.js";
+import { consentRecords, privacySettings } from "@/db/schema.js";
 import { eq, desc } from "drizzle-orm";
-import { hashIp } from "@/utils/hash";
-import { logger } from "@/utils/logger";
+import { hashIp } from "@/utils/hash.js";
+import { logger } from "@/utils/logger.js";
 
 // Bump these versions when policy documents change.
 // Any user who consented to an older version will be

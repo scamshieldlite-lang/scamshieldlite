@@ -1,8 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
-import { auth } from "@/lib/auth";
-import { UnauthorizedError } from "@/utils/errors";
-import { RateLimitResult } from "@/services/rateLimit.service";
-import { logger } from "@/utils/logger";
+import { auth } from "@/lib/auth.js";
+import { UnauthorizedError } from "@/utils/errors.js";
+import { RateLimitResult } from "@/services/rateLimit.service.js";
+import { logger } from "@/utils/logger.js";
 
 // Extend Express Request to carry the session
 declare global {

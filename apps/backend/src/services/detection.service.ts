@@ -1,12 +1,12 @@
 // apps/backend/src/services/pii/piiScrubber.service.ts
 
-import { scrubPii } from "./pii/piiScrubber.service";
-import { aiService } from "./ai/ai.service";
-import { db } from "@/db";
-import { scans } from "@/db/schema";
-import { env } from "@/utils/env";
-import { logger } from "@/utils/logger";
-import { InvalidInputError } from "@/utils/errors";
+import { scrubPii } from "./pii/piiScrubber.service.js";
+import { aiService } from "./ai/ai.service.js";
+import { db } from "@/db/index.js";
+import { scans } from "@/db/schema.js";
+import { env } from "@/utils/env.js";
+import { logger } from "@/utils/logger.js";
+import { InvalidInputError } from "@/utils/errors.js";
 import type { ScanResult } from "@scamshieldlite/shared";
 
 export interface RunDetectionParams {

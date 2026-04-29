@@ -1,6 +1,6 @@
 // apps/backend/src/config/rateLimits.ts
 
-import { env } from "@/utils/env";
+import { env } from "@/utils/env.js";
 
 export type UserTier = "guest" | "trialing" | "paid" | "expired";
 

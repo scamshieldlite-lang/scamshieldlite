@@ -1,11 +1,11 @@
-import { createApp } from "./app";
-import { env } from "@/utils/env";
-import { logger } from "@/utils/logger";
-import { testDbConnection } from "@/db/index";
+import { createApp } from "./app.js";
+import { env } from "@/utils/env.js";
+import { logger } from "@/utils/logger.js";
+import { testDbConnection } from "@/db/index.js";
 import {
   startRetentionScheduler,
   stopRetentionScheduler,
-} from "./jobs/retention.job";
+} from "./jobs/retention.job.js";
 
 async function bootstrap(): Promise<void> {
   // 1. Verify DB before accepting traffic

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth.js";
 
 // Same as requireAuth but never throws — guest requests pass through
 export async function optionalAuth(

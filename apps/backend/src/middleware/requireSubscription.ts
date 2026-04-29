@@ -1,8 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
-import { db } from "../db";
-import { subscriptions } from "../db/schema";
+import { db } from "@/db/index.js";
+import { subscriptions } from "../db/schema.js";
 import { eq } from "drizzle-orm";
-import { logger } from "../utils/logger";
+import { logger } from "../utils/logger.js";
 
 export async function requireSubscription(
   req: Request,

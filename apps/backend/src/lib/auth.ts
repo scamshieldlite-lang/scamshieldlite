@@ -1,12 +1,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "@/db";
-import * as schema from "@/db/schema";
-import { env } from "@/utils/env";
-import { logger } from "@/utils/logger";
-import { subscriptionService } from "@/services/subscription.service";
+import { db } from "@/db/index.js";
+import * as schema from "@/db/schema.js";
+import { env } from "@/utils/env.js";
+import { logger } from "@/utils/logger.js";
+import { subscriptionService } from "@/services/subscription.service.js";
 import { createAuthMiddleware } from "better-auth/api";
-import { consentService } from "@/services/consent.service";
+import { consentService } from "@/services/consent.service.js";
 import { bearer } from "better-auth/plugins";
 
 export const auth = betterAuth({

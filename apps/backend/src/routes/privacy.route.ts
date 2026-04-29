@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { requireAuth } from "@/middleware/requireAuth";
-import { privacyController } from "@/controllers/privacy.controller";
+import { requireAuth } from "@/middleware/requireAuth.js";
+import { privacyController } from "@/controllers/privacy.controller.js";
 
 const router: Router = Router();
 

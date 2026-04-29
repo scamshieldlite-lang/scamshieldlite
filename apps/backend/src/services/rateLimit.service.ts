@@ -1,10 +1,10 @@
 // apps/backend/src/services/rateLimit.service.ts
 
-import { auditLogService } from "./auditLog.service";
-import { tierResolverService } from "./tierResolver.service";
-import { getLimitForTier } from "@/config/rateLimits";
-import { hashIp } from "@/utils/hash";
-import { logger } from "@/utils/logger";
+import { auditLogService } from "./auditLog.service.js";
+import { tierResolverService } from "./tierResolver.service.js";
+import { getLimitForTier } from "@/config/rateLimits.js";
+import { hashIp } from "@/utils/hash.js";
+import { logger } from "@/utils/logger.js";
 
 export interface RateLimitIdentity {
   userId?: string;

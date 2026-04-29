@@ -1,9 +1,9 @@
-import { db } from "@/db";
-import { subscriptions } from "@/db/schema";
+import { db } from "@/db/index.js";
+import { subscriptions } from "@/db/schema.js";
 import { eq } from "drizzle-orm";
-import { googlePlayService } from "./googlePlay.service";
-import { nowPlusDays, isExpired } from "@/utils/date";
-import { logger } from "@/utils/logger";
+import { googlePlayService } from "./googlePlay.service.js";
+import { nowPlusDays, isExpired } from "@/utils/date.js";
+import { logger } from "@/utils/logger.js";
 import type {
   SubscriptionPlan,
   SubscriptionState,

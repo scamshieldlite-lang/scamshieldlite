@@ -1,9 +1,9 @@
 // apps/backend/src/services/auditLog.service.ts
 
-import { db } from "@/db";
-import { auditLogs } from "@/db/schema";
+import { db } from "@/db/index.js";
+import { auditLogs } from "@/db/schema.js";
 import { and, eq, gte, sql } from "drizzle-orm";
-import { logger } from "@/utils/logger";
+import { logger } from "@/utils/logger.js";
 
 export type AuditAction = "scan" | "report" | "login" | "logout" | "signup";
 

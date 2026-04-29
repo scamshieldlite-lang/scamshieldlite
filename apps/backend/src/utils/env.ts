@@ -1,8 +1,8 @@
 import { z } from "zod";
-import dotenv from "dotenv";
-
+import { config } from "dotenv";
+config();
 // Ensure .env is loaded before validation
-dotenv.config();
+// dotenv.config();
 
 const envSchema = z.object({
   // Server

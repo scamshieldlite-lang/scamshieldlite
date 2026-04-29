@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { requireAuth } from "@/middleware/requireAuth";
-import { subscriptionController } from "@/controllers/subscription.controller";
+import { requireAuth } from "@/middleware/requireAuth.js";
+import { subscriptionController } from "@/controllers/subscription.controller.js";
 import express from "express";
 
 const router: Router = Router();

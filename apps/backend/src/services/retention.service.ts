@@ -1,9 +1,9 @@
 // apps/backend/src/services/retention.service.ts
 
-import { db } from "@/db";
-import { auditLogs, scans, reportedScams, session } from "@/db/schema";
+import { db } from "@/db/index.js";
+import { auditLogs, scans, reportedScams, session } from "@/db/schema.js";
 import { lt, and, isNull, sql } from "drizzle-orm";
-import { logger } from "@/utils/logger";
+import { logger } from "@/utils/logger.js";
 
 // Retention windows
 const RETENTION = {

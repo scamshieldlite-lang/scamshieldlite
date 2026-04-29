@@ -1,13 +1,13 @@
-import { Router } from 'express';
-import type { Request, Response } from 'express';
-import { auth } from '../lib/auth';
-import { toNodeHandler } from 'better-auth/node';
+import { Router } from "express";
+import type { Request, Response } from "express";
+import { auth } from "@/lib/auth.js";
+import { toNodeHandler } from "better-auth/node";
 
-const router:Router = Router();
+const router: Router = Router();
 
 // Better Auth handles ALL auth routes under /api/auth/*
 // This includes: sign-up, sign-in, sign-out, get-session
 // toNodeHandler converts Better Auth's fetch-based handler to Express
-router.all('/*', toNodeHandler(auth));
+router.all("/*", toNodeHandler(auth));
 
 export default router;

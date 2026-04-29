@@ -1,10 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
-import { subscriptionService } from "@/services/subscription.service";
+import { subscriptionService } from "@/services/subscription.service.js";
 import { z } from "zod";
-import { InvalidInputError, UnauthorizedError } from "@/utils/errors";
-import { logger } from "@/utils/logger";
+import { InvalidInputError, UnauthorizedError } from "@/utils/errors.js";
+import { logger } from "@/utils/logger.js";
 import { createHmac } from "crypto";
-import { env } from "@/utils/env";
+import { env } from "@/utils/env.js";
 import { db } from "../db/index.js";
 import { subscriptions } from "../db/schema.js";
 import { eq } from "drizzle-orm";

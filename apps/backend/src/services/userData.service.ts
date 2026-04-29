@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { db } from "@/db/index.js";
 import {
   scans,
   reportedScams,
@@ -7,10 +7,10 @@ import {
   consentRecords,
   privacySettings,
   devices,
-} from "@/db/schema";
+} from "@/db/schema.js";
 import { eq } from "drizzle-orm";
-import { logger } from "@/utils/logger";
-import { auth } from "@/lib/auth";
+import { logger } from "@/utils/logger.js";
+import { auth } from "@/lib/auth.js";
 
 export const userDataService = {
   /**
