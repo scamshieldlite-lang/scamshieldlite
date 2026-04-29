@@ -50,7 +50,7 @@ module.exports = ({ config }) => ({
         android: {
           newArchEnabled: true,
           kotlinVersion: "2.1.20",
-          usesCleartextTraffic: true,
+          // usesCleartextTraffic: true, // Only needed for development builds to allow HTTP API calls to local servers; should be removed for production
         },
       },
     ],
