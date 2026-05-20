@@ -116,6 +116,8 @@ export const scanController = {
         scanLimit: result.limit,
         scansRemaining: result.remaining,
         isGuest: !req.user,
+        isLifetime: result.isLifetime,
+        resetAt: result.resetAt ? result.resetAt.toISOString() : null,
       };
 
       res.json(body);

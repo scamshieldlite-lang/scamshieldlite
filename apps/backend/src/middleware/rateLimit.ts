@@ -14,7 +14,8 @@ declare global {
         count: number;
         remaining: number;
         tier: string;
-        resetAt: Date;
+        isLifetime: boolean;
+        resetAt: Date | null;
       };
     }
   }
@@ -43,8 +44,12 @@ export async function rateLimitMiddleware(
     // Set standard rate limit headers so the mobile app can read them
     res.setHeader("X-RateLimit-Limit", result.limit);
     res.setHeader("X-RateLimit-Remaining", result.remaining);
-    res.setHeader("X-RateLimit-Reset", result.resetAt.toISOString());
+    res.setHeader(
+      "X-RateLimit-Reset",
+      result.resetAt?.toISOString() ?? "never",
+    );
     res.setHeader("X-RateLimit-Tier", result.tier);
+    result.resetAt?.toISOString() ?? null;
 
     if (!result.allowed) {
       logger.warn(
@@ -54,12 +59,15 @@ export async function rateLimitMiddleware(
           tier: result.tier,
           count: result.count,
           limit: result.limit,
+          isLifetime: result.isLifetime,
         },
         "Rate limit exceeded",
       );
 
       throw new RateLimitError(
-        `Daily scan limit reached. Upgrade for more scans.`,
+        result.isLifetime
+          ? `You have used all ${result.limit} free scans. Subscribe to continue scanning.`
+          : `Daily scan limit reached. Upgrade for more scans.`,
         result.remaining,
       );
     }

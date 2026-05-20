@@ -43,13 +43,16 @@ export interface UsageSummary {
   scanLimit: number;
   scansRemaining: number;
   isGuest: boolean;
+  isLifetime: boolean;
+  resetAt: string | null;
 }
 
 export interface RateLimitHeaders {
   limit: number;
   remaining: number;
-  resetAt: string; // ISO string
+  resetAt: string | null; // ISO string
   tier: string;
+  isLifetime: boolean;
 }
 
 export type UserTier = "guest" | "trialing" | "paid" | "expired";
