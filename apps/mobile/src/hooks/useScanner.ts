@@ -19,7 +19,7 @@ export function useScanner(): UseScannerReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRateLimited, setIsRateLimited] = useState(false);
-  const { decrementOptimistic, refresh } = useScanUsage();
+  const { decrementOptimistic, refresh, usage } = useScanUsage();
 
   const scan = useCallback(
     async (text: string): Promise<ScanResponse | null> => {
@@ -29,7 +29,7 @@ export function useScanner(): UseScannerReturn {
 
       try {
         decrementOptimistic();
-        const result = await scanService.analyze(text, "text");
+        const result = await scanService.analyze(text);
         // Sync actual usage after successful scan
         await refresh();
         return result;
@@ -41,7 +41,12 @@ export function useScanner(): UseScannerReturn {
 
         if (code === "RATE_LIMITED") {
           setIsRateLimited(true);
-          setError(message ?? "Daily scan limit reached");
+          setError(
+            message ??
+              (usage?.isLifetime
+                ? "You have used all your free scans"
+                : "Daily scan limit reached"),
+          );
           // Re-sync usage so counter reflects real state
           await refresh();
         } else if (code === "INVALID_INPUT") {
@@ -55,7 +60,7 @@ export function useScanner(): UseScannerReturn {
         setIsLoading(false);
       }
     },
-    [decrementOptimistic, refresh],
+    [decrementOptimistic, refresh, usage],
   );
 
   const clearError = useCallback(() => {

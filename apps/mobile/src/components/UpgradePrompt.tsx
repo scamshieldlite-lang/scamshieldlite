@@ -5,12 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   isGuest: boolean;
+  isLifetime: boolean;
   onSubscribe?: () => void;
   onDismiss?: () => void;
 }
 
 export default function UpgradePrompt({
   isGuest,
+  isLifetime = false,
   onSubscribe,
   onDismiss,
 }: Props) {
@@ -30,17 +32,20 @@ export default function UpgradePrompt({
     onSubscribe?.();
   };
 
+  // Title and subtitle change based on context
+  const title = isGuest
+    ? "You've used all 3 free scans"
+    : "Your free scans are exhausted";
+
+  const subtitle = isGuest
+    ? "Create a free account to get a 3-day trial with 20 scans per day, then subscribe to keep scanning."
+    : "You've used all your free scans. Subscribe to ScamShieldLite to continue protecting yourself.";
+
   return (
     <View style={styles.container}>
       <Text style={styles.emoji}>🚫</Text>
-      <Text style={styles.title}>
-        {isGuest ? "You've used all free scans" : "Trial scan limit reached"}
-      </Text>
-      <Text style={styles.subtitle}>
-        {isGuest
-          ? "Create a free account to get 20 scans per day and keep your scan history."
-          : "Subscribe to ScamShieldLite for unlimited scans and full history access."}
-      </Text>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.subtitle}>{subtitle}</Text>
 
       {isGuest ? (
         <TouchableOpacity style={styles.primaryButton} onPress={handleSignUp}>

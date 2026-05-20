@@ -14,9 +14,20 @@ export default function UsageBadge() {
   // not the API response which may be stale
   const isGuest = authState !== "authenticated";
 
-  const { scansRemaining, scanLimit } = usage;
+  const { scansRemaining, scanLimit, isLifetime } = usage;
   const isLow = scansRemaining <= 1;
   const isExhausted = scansRemaining === 0;
+
+  // Badge text depends on whether it's a lifetime or daily limit
+  const remainingText = isExhausted
+    ? isLifetime
+      ? "All free scans used"
+      : "No scans remaining today"
+    : isLifetime
+      ? `${scansRemaining} of ${scanLimit} free scans left`
+      : `${scansRemaining} of ${scanLimit} scans remaining`;
+
+  const guestLabel = isGuest ? "  ·  Guest" : "";
 
   return (
     <View
@@ -43,10 +54,8 @@ export default function UsageBadge() {
           isLow && !isExhausted && styles.textLow,
         ]}
       >
-        {isExhausted
-          ? "No scans remaining"
-          : `${scansRemaining} of ${scanLimit} scans remaining`}
-        {isGuest ? "  ·  Guest" : ""}
+        {remainingText}
+        {isGuest ? guestLabel : ""}
       </Text>
     </View>
   );

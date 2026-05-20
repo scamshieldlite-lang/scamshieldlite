@@ -70,6 +70,14 @@ export default function ScanInputScreen({ navigation }: Props) {
     }, [clearError]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (usage && usage.scansRemaining === 0 && usage.isLifetime) {
+        setShowUpgradeModal(true);
+      }
+    }, [usage]),
+  );
+
   // Shared scan trigger — used by both text and screenshot paths
   const triggerScan = useCallback(
     async (textToScan: string, type: InputMode = "text") => {
@@ -304,6 +312,7 @@ export default function ScanInputScreen({ navigation }: Props) {
         <View style={styles.modalOverlay}>
           <UpgradePrompt
             isGuest={authState === "guest"}
+            isLifetime={usage?.isLifetime ?? false}
             onSubscribe={handleSubscribe}
             onDismiss={() => setShowUpgradeModal(false)}
           />
