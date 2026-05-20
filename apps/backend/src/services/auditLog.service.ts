@@ -19,7 +19,7 @@ export interface CountScansParams {
   userId?: string;
   deviceFingerprint?: string;
   ipHash?: string;
-  windowMs: number;
+  windowMs: number | null; // null means count all scans ever (lifetime limit)
 }
 
 export const auditLogService = {
@@ -50,7 +50,10 @@ export const auditLogService = {
    * The most specific identity available is used.
    */
   async countScansInWindow(params: CountScansParams): Promise<number> {
-    const windowStart = new Date(Date.now() - params.windowMs);
+    // windowMs null means count ALL scans ever — lifetime limit
+    const windowStart = params.windowMs
+      ? new Date(Date.now() - params.windowMs)
+      : null;
 
     // Build the WHERE clause based on whichever identity we have
     // Priority: userId > deviceFingerprint > ipHash
@@ -67,16 +70,18 @@ export const auditLogService = {
       return 0;
     }
 
+    // Build where conditions
+    const conditions = [
+      identityCondition,
+      eq(auditLogs.action, "scan"),
+      // Only add time filter if windowMs is provided
+      ...(windowStart ? [gte(auditLogs.createdAt, windowStart)] : []),
+    ];
+
     const result = await db
       .select({ count: sql<number>`cast(count(*) as integer)` })
       .from(auditLogs)
-      .where(
-        and(
-          identityCondition,
-          eq(auditLogs.action, "scan"),
-          gte(auditLogs.createdAt, windowStart),
-        ),
-      );
+      .where(and(...conditions));
 
     return result[0]?.count ?? 0;
   },

@@ -18,7 +18,8 @@ export interface RateLimitResult {
   count: number;
   remaining: number;
   tier: string;
-  resetAt: Date;
+  resetAt: Date | null;
+  isLifetime: boolean;
 }
 
 export const rateLimitService = {
@@ -33,7 +34,7 @@ export const rateLimitService = {
 
     // 1. Resolve tier based on subscription status
     const tier = await tierResolverService.resolveTier(identity.userId);
-    const { dailyLimit, windowMs } = getLimitForTier(tier);
+    const { dailyLimit, windowMs, isLifetime } = getLimitForTier(tier);
 
     // 2. Count existing scans in the rolling window
     const count = await auditLogService.countScansInWindow({
@@ -45,7 +46,9 @@ export const rateLimitService = {
 
     const allowed = count < dailyLimit;
     const remaining = Math.max(0, dailyLimit - count - (allowed ? 1 : 0));
-    const resetAt = new Date(Date.now() + windowMs);
+    const resetAt = isLifetime
+      ? null // no reset for lifetime limits
+      : new Date(Date.now() + (windowMs ?? 0));
 
     // 3. Only log if the request is allowed — don't count blocked attempts
     if (allowed) {
@@ -68,11 +71,20 @@ export const rateLimitService = {
         count,
         dailyLimit,
         allowed,
+        isLifetime,
       },
       "Rate limit check",
     );
 
-    return { allowed, limit: dailyLimit, count, remaining, tier, resetAt };
+    return {
+      allowed,
+      limit: dailyLimit,
+      count,
+      remaining,
+      tier,
+      resetAt,
+      isLifetime,
+    };
   },
 
   /**
@@ -82,7 +94,7 @@ export const rateLimitService = {
   async getUsage(identity: RateLimitIdentity): Promise<RateLimitResult> {
     const ipHash = identity.ip ? hashIp(identity.ip) : undefined;
     const tier = await tierResolverService.resolveTier(identity.userId);
-    const { dailyLimit, windowMs } = getLimitForTier(tier);
+    const { dailyLimit, windowMs, isLifetime } = getLimitForTier(tier);
 
     const count = await auditLogService.countScansInWindow({
       userId: identity.userId,
@@ -97,7 +109,10 @@ export const rateLimitService = {
       count,
       remaining: Math.max(0, dailyLimit - count),
       tier,
-      resetAt: new Date(Date.now() + windowMs),
+      resetAt: isLifetime
+        ? null // no reset for lifetime limits
+        : new Date(Date.now() + (windowMs ?? 0)),
+      isLifetime,
     };
   },
 };
