@@ -43,13 +43,11 @@ export async function getDeviceFingerprint(): Promise<string> {
     }
 
     const fingerprint = await generateFingerprint();
-    // const hashed = await hash(fingerprint);
     await storageService.set(StorageKey.DEVICE_FINGERPRINT, fingerprint);
     logger.info("Device fingerprint generated and stored");
     return fingerprint;
   } catch (error) {
-    logger.error("Failed to get device fingerprint", error);
-    // Return a session-only fallback — never crash over this
+    logger.error("Failed to get device fingerprint.", error);
     return `session_${Date.now()}`;
   }
 }
