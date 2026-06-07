@@ -50,11 +50,6 @@ export const auditLogService = {
    * The most specific identity available is used.
    */
   async countScansInWindow(params: CountScansParams): Promise<number> {
-    // windowMs null means count ALL scans ever — lifetime limit
-    const windowStart = params.windowMs
-      ? new Date(Date.now() - params.windowMs)
-      : null;
-
     // Build the WHERE clause based on whichever identity we have
     // Priority: userId > deviceFingerprint > ipHash
     const identityCondition = params.userId
@@ -70,20 +65,53 @@ export const auditLogService = {
       return 0;
     }
 
-    // Build where conditions
-    const conditions = [
-      identityCondition,
-      eq(auditLogs.action, "scan"),
-      // Only add time filter if windowMs is provided
-      ...(windowStart ? [gte(auditLogs.createdAt, windowStart)] : []),
-    ];
+    // Build query differently based on whether this is lifetime or windowed
+    if (params.windowMs === null) {
+      // LIFETIME — count ALL scans ever for this identity, no time filter
+      const result = await db
+        .select({ count: sql<number>`cast(count(*) as integer)` })
+        .from(auditLogs)
+        .where(and(identityCondition, eq(auditLogs.action, "scan")));
+
+      const count = result[0]?.count ?? 0;
+      logger.debug(
+        {
+          userId: params.userId,
+          deviceFingerprint: params.deviceFingerprint?.substring(0, 12),
+          count,
+          type: "lifetime",
+        },
+        "Lifetime scan count",
+      );
+      return count;
+    }
+
+    // WINDOWED — count scans within rolling time window
+    const windowStart = new Date(Date.now() - params.windowMs);
 
     const result = await db
       .select({ count: sql<number>`cast(count(*) as integer)` })
       .from(auditLogs)
-      .where(and(...conditions));
+      .where(
+        and(
+          identityCondition,
+          eq(auditLogs.action, "scan"),
+          gte(auditLogs.createdAt, windowStart),
+        ),
+      );
 
-    return result[0]?.count ?? 0;
+    const count = result[0]?.count ?? 0;
+    logger.debug(
+      {
+        userId: params.userId,
+        deviceFingerprint: params.deviceFingerprint?.substring(0, 12),
+        count,
+        windowStart,
+        type: "windowed",
+      },
+      "Windowed scan count",
+    );
+    return count;
   },
 
   /**
@@ -94,7 +122,7 @@ export const auditLogService = {
     limit = 20,
   ): Promise<(typeof auditLogs.$inferSelect)[]> {
     return db.query.auditLogs.findMany({
-      where: eq(auditLogs.userId, userId),
+      where: (log, { eq }) => eq(log.userId, userId),
       orderBy: (log, { desc }) => [desc(log.createdAt)],
       limit,
     });
