@@ -21,7 +21,6 @@ module.exports = ({ config }) => ({
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: BRAND_NAVY,
     },
-    // package: "com.ibnballo.scamshieldlite.app",
     package: "com.scamshieldlite.app",
     permissions: [
       "com.android.vending.BILLING",
@@ -50,21 +49,20 @@ module.exports = ({ config }) => ({
         android: {
           newArchEnabled: true,
           kotlinVersion: "2.1.20",
-          // usesCleartextTraffic: true, // Only needed for development builds to allow HTTP API calls to local servers; should be removed for production
         },
       },
     ],
     // "./node_modules/@react-native-ml-kit/text-recognition/app.plugin.js",
     // ML Kit plugin — enables on-device model bundling
-    // [
-    //   "@react-native-ml-kit/text-recognition",
-    //   {
-    //     // Bundle the Latin script model — covers English + most
-    //     // Nigerian language text (Yoruba, Igbo, Hausa use Latin)
-    //     // Additional scripts can be added but increase APK size
-    //     languages: ["latin"],
-    //   },
-    // ],
+    [
+      "@react-native-ml-kit/text-recognition",
+      {
+        // Bundle the Latin script model — covers English + most
+        // Nigerian language text (Yoruba, Igbo, Hausa use Latin)
+        // Additional scripts can be added but increase APK size
+        languages: ["latin"],
+      },
+    ],
     [
       "expo-notifications",
       {

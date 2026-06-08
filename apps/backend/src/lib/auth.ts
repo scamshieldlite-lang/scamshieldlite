@@ -20,6 +20,14 @@ export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL.replace(/\/api\/auth\/?$/, ""),
 
   trustedOrigins: [
+    // ✅ ADD PRODUCTION ORIGINS:
+  "https://scamshieldlite.com", 
+  "https://scamshieldlite.com:3000",
+  "https://scamshieldlite.com/api/auth",
+  
+  // ✅ ADD EXPO NATIVE MOBILITY APP PROTOCOLS:
+  "exp://",
+  "scamshieldlite://"
     "http://192.168.43.92:3000",
     "http://192.168.43.92:8081",
     "exp://192.168.43.92:8081",
