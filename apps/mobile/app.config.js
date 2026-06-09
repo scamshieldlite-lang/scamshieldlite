@@ -52,17 +52,6 @@ module.exports = ({ config }) => ({
         },
       },
     ],
-    // "./node_modules/@react-native-ml-kit/text-recognition/app.plugin.js",
-    // ML Kit plugin — enables on-device model bundling
-    [
-      "@react-native-ml-kit/text-recognition",
-      {
-        // Bundle the Latin script model — covers English + most
-        // Nigerian language text (Yoruba, Igbo, Hausa use Latin)
-        // Additional scripts can be added but increase APK size
-        languages: ["latin"],
-      },
-    ],
     [
       "expo-notifications",
       {
