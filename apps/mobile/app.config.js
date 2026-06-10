@@ -24,7 +24,7 @@ module.exports = ({ config }) => ({
     package: "com.scamshieldlite.app",
     permissions: [
       "com.android.vending.BILLING",
-      "android.permission.READ_MEDIA_IMAGES",
+      // "android.permission.READ_MEDIA_IMAGES",
       "android.permission.CAMERA",
     ],
   },
