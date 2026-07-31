@@ -47,6 +47,11 @@
   "expo": {
     "android": {
       "package": "com.ibnballo.scamshieldlite"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8ea49fa7-ba5b-42ec-b27f-484a00d89e60"
+      }
     }
   }
 }
