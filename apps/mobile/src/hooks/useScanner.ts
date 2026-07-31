@@ -47,12 +47,16 @@ export function useScanner(): UseScannerReturn {
                 ? "You have used all your free scans"
                 : "Daily scan limit reached"),
           );
-          // Re-sync usage so counter reflects real state
-          await refresh();
         } else if (code === "INVALID_INPUT") {
           setError(message ?? "Invalid message text");
+        } else if (!axiosError.response) {
+          // Connection or timeout error across both Railway and Render
+          setError(
+            "Unable to connect to server. Please check your internet connection.",
+          );
         } else {
-          setError("Something went wrong. Please try again.");
+          // Backend returned 500 or unhandled error status
+          setError(message ?? "Something went wrong. Please try again.");
         }
 
         return null;
