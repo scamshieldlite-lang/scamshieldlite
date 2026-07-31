@@ -37,6 +37,26 @@ export function useScanner(): UseScannerReturn {
         const axiosError = err as AxiosError<ApiError>;
         const code = axiosError.response?.data?.code;
         const message = axiosError.response?.data?.error;
+        const status = axiosError.response?.status;
+        const url = axiosError.config?.url;
+
+        // Temporary — shows full error detail on screen during debugging
+        console.error(
+          "SCAN ERROR FULL:",
+          JSON.stringify(
+            {
+              code,
+              message,
+              status,
+              url,
+              isNetwork: !axiosError.response,
+              baseURL: axiosError.config?.baseURL,
+              responseData: axiosError.response?.data,
+            },
+            null,
+            2,
+          ),
+        );
         await refresh();
 
         if (code === "RATE_LIMITED") {

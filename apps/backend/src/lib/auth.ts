@@ -25,6 +25,11 @@ export const auth = betterAuth({
     "https://scamshieldlite.com:3000",
     "https://scamshieldlite.com/api/auth",
 
+    // ✅ ADD FALLBACK ORIGINS:
+    "https://scamshieldlite-api.onrender.com",
+    "https://scamshieldlite-api.onrender.com:3000",
+    "https://scamshieldlite-api.onrender.com/api/auth",
+
     // ✅ ADD EXPO NATIVE MOBILITY APP PROTOCOLS:
     "exp://",
     "scamshieldlite://",
