@@ -42,4 +42,20 @@ router.get("/db", async (_req: Request, res: Response) => {
   }
 });
 
+// ── Version endpoint ──────────────────────────────────────────────
+// Returns which deployment handled the request and what version is running.
+// Useful for confirming Railway vs Render and that deployments are in sync.
+router.get("/version", (_req: Request, res: Response) => {
+  res.json({
+    version: process.env.npm_package_version ?? "1.0.0",
+    environment: process.env.NODE_ENV ?? "unknown",
+    // DEPLOYMENT_ENV is set differently on Railway vs Render
+    // so you can immediately see which backend responded
+    deployment: process.env.DEPLOYMENT_ENV ?? "unknown",
+    // Shows when this instance started — useful for detecting restarts
+    startedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 export default router;

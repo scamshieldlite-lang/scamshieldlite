@@ -79,7 +79,9 @@ apiClient.interceptors.request.use(
 // ── Primary response interceptor ─────────────────────────────────
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    logger.debug(`← ${response.status} ${response.config.url}`);
+    logger.debug(
+      `← ${response.status} ${response.config.url} [backend primary]`,
+    );
     return response;
   },
   async (error: AxiosError<ApiError>) => {
@@ -93,7 +95,9 @@ apiClient.interceptors.response.use(
 
     if ((isNetworkError || isServerError) && fallbackClient) {
       logger.warn(
-        `Primary API failed (${isNetworkError ? "network error" : status}) — trying fallback`,
+        `Primary backend failed (${
+          isNetworkError ? "network error" : `HTTP ${status}`
+        }) on ${method} ${url} — attempting fallback`,
       );
 
       try {
@@ -113,14 +117,21 @@ apiClient.interceptors.response.use(
 
         const fallbackResponse = await fallbackClient.request(fallbackConfig);
 
-        logger.info(`← Fallback succeeded: ${fallbackResponse.status} ${url}`);
+        logger.info(
+          `← ${fallbackResponse.status} ${url} [backend: fallback/render]`,
+        );
         return fallbackResponse;
       } catch (fallbackError) {
         logger.error(
-          `← Fallback also failed for ${method} ${url}, error: ${fallbackError}`,
+          `Fallback backend also failed for ${method} ${url}: ${
+            fallbackError ?? "unknown error"
+          }`,
         );
         // Fall through to original error handling below
       }
+    } else if (!isNetworkError && !isServerError) {
+      // Primary succeeded (4xx etc) — log which backend responded
+      logger.debug(`← ${status} ${url} [backend: primary/railway]`);
     }
 
     // ── No fallback or fallback also failed ───────────────────────
