@@ -11,23 +11,58 @@ import { getDeviceFingerprint } from "@/utils/deviceFingerprint";
 import { logger } from "@/utils/logger";
 import type { ApiError } from "@scamshieldlite/shared/";
 
+// ── Fallback URL ──────────────────────────────────────────────────
+// Used when the primary URL fails with a network error or 5xx
+// Set this to your Render URL when Railway is primary, or vice versa
+const FALLBACK_BASE_URL = API_CONFIG.fallbackURL;
+
+// ── Shared request builder ────────────────────────────────────────
+// Adds auth token, fingerprint, and Origin header to any config
+async function buildRequestHeaders(
+  config: InternalAxiosRequestConfig,
+  baseURL: string,
+): Promise<InternalAxiosRequestConfig> {
+  const token = tokenStore.get();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  const fingerprint = await getDeviceFingerprint();
+  config.headers["X-Device-Fingerprint"] = fingerprint;
+
+  // Origin header — required by Better Auth for CSRF protection
+  // Must match the server's trustedOrigins list
+  config.headers["Origin"] = baseURL;
+
+  return config;
+}
+
+// ── Primary client ────────────────────────────────────────────────
 const apiClient: AxiosInstance = axios.create({
   baseURL: `${API_CONFIG.baseURL}/api`,
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
-    Origin: "http://192.168.43.92:3000",
   },
 });
 
-// ── Request interceptor ───────────────────────────────────────────
-// Reads token from memory — synchronous, no async issues
+// ── Fallback client (separate instance — no shared interceptors) ──
+// Only created if FALLBACK_BASE_URL is configured
+const fallbackClient: AxiosInstance | null = FALLBACK_BASE_URL
+  ? axios.create({
+      baseURL: `${FALLBACK_BASE_URL}/api`,
+      timeout: 30000,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+  : null;
+
+// ── Primary request interceptor ───────────────────────────────────
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    // Token from memory
     const token = tokenStore.get();
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
       logger.debug(
         `→ ${config.method?.toUpperCase()} ${config.url} [auth: yes]`,
       );
@@ -36,22 +71,12 @@ apiClient.interceptors.request.use(
         `→ ${config.method?.toUpperCase()} ${config.url} [auth: no token]`,
       );
     }
-
-    // Device fingerprint
-    const fingerprint = await getDeviceFingerprint();
-    config.headers["X-Device-Fingerprint"] = fingerprint;
-
-    // ← ADD THIS — React Native doesn't send Origin automatically
-    // Better Auth requires it for CSRF protection
-    // Use the API base URL as the origin
-    config.headers["Origin"] = API_CONFIG.baseURL;
-
-    return config;
+    return buildRequestHeaders(config, API_CONFIG.baseURL);
   },
   (error) => Promise.reject(error),
 );
 
-// ── Response interceptor ─────────────────────────────────────────
+// ── Primary response interceptor ─────────────────────────────────
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     logger.debug(`← ${response.status} ${response.config.url}`);
@@ -60,8 +85,44 @@ apiClient.interceptors.response.use(
   async (error: AxiosError<ApiError>) => {
     const status = error.response?.status;
     const url = error.config?.url;
+    const method = error.config?.method?.toUpperCase();
 
-    if (!error.response) {
+    // ── Network error or server crash → try fallback ──────────────
+    const isNetworkError = !error.response;
+    const isServerError = status !== undefined && status >= 500;
+
+    if ((isNetworkError || isServerError) && fallbackClient) {
+      logger.warn(
+        `Primary API failed (${isNetworkError ? "network error" : status}) — trying fallback`,
+      );
+
+      try {
+        // Rebuild the request against the fallback URL
+        // Use the original request config but strip the baseURL
+        // so fallbackClient's baseURL is used instead
+        const originalConfig = error.config!;
+
+        // Add headers to the fallback request
+        const fallbackConfig: InternalAxiosRequestConfig = {
+          ...originalConfig,
+          baseURL: `${FALLBACK_BASE_URL}/api`,
+          headers: originalConfig.headers,
+        };
+
+        await buildRequestHeaders(fallbackConfig, FALLBACK_BASE_URL!);
+
+        const fallbackResponse = await fallbackClient.request(fallbackConfig);
+
+        logger.info(`← Fallback succeeded: ${fallbackResponse.status} ${url}`);
+        return fallbackResponse;
+      } catch (fallbackError) {
+        logger.error(`← Fallback also failed for ${method} ${url}`);
+        // Fall through to original error handling below
+      }
+    }
+
+    // ── No fallback or fallback also failed ───────────────────────
+    if (isNetworkError) {
       logger.error(`← NETWORK ERROR ${url}: ${error.message}`);
       const networkError = new Error(
         "Could not reach the server. Check your connection and try again.",
@@ -70,8 +131,8 @@ apiClient.interceptors.response.use(
       return Promise.reject(networkError);
     }
 
+    // 401 — clear auth state
     if (status === 401) {
-      // Clear both memory and storage
       tokenStore.clear();
       await storageService.clearAuthData();
     }

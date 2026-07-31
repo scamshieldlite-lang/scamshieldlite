@@ -175,8 +175,17 @@ export default function PaywallScreen({
         {/* Error */}
         {error && (
           <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>⚠ {error}</Text>
-            <TouchableOpacity onPress={reset}>
+            <Text style={styles.errorText}>⚠️ {error}</Text>
+
+            {(error.toLowerCase().includes("not found") ||
+              error.toLowerCase().includes("unavailable")) && (
+              <Text style={styles.errorHint}>
+                Subscriptions may take up to 48 hours to activate after being
+                created in the Play Console. Please try again later.
+              </Text>
+            )}
+
+            <TouchableOpacity onPress={reset} activeOpacity={0.7}>
               <Text style={styles.retryText}>Try again</Text>
             </TouchableOpacity>
           </View>
@@ -385,6 +394,12 @@ const styles = StyleSheet.create({
   errorText: {
     color: Colors.scam,
     fontSize: 13,
+  },
+  errorHint: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 17,
+    marginTop: 4,
   },
   retryText: {
     color: Colors.primary,

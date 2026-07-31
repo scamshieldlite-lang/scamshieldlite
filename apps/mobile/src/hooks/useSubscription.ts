@@ -123,6 +123,7 @@ export function useSubscription(): UseSubscriptionReturn {
   }, [connected, fetchProducts]);
 
   // ── Initiate purchase ─────────────────────────────────────────
+  // ── Initiate purchase ─────────────────────────────────────────
   const purchase = useCallback(
     async (productId: ProductId) => {
       if (state !== "ready") return;
@@ -131,11 +132,39 @@ export function useSubscription(): UseSubscriptionReturn {
       setError(null);
 
       try {
+        // 1. Find product by id/sku
+        const product = subscriptions.find(
+          (s) =>
+            s.id === productId || (s as { sku?: string }).sku === productId,
+        );
+
+        if (!product) {
+          throw new Error(
+            `Product ${productId} not found. Make sure it is active in Play Console.`,
+          );
+        }
+
+        // 2. Extract offerToken using v14 subscriptionOffers structure
+        const offerToken =
+          product.subscriptionOffers?.[0]?.offerTokenAndroid ??
+          (product.subscriptionOffers?.[0] as { offerToken?: string })
+            ?.offerToken;
+
+        // 3. Dispatch purchase request to Google Play
         await requestPurchase({
           request: {
-            // v14 uses platform-specific request objects
             google: {
               skus: [productId],
+              ...(offerToken
+                ? {
+                    subscriptionOffers: [
+                      {
+                        sku: productId,
+                        offerToken,
+                      },
+                    ],
+                  }
+                : {}),
             },
           },
           type: "subs",
@@ -143,7 +172,6 @@ export function useSubscription(): UseSubscriptionReturn {
         // onPurchaseSuccess / onPurchaseError handles the rest
       } catch (err) {
         const msg = extractErrorMessage(err);
-        // Cancelled is handled by onPurchaseError — only catch real errors
         if (!msg.toLowerCase().includes("cancel")) {
           setError(msg);
           setState("error");
@@ -152,7 +180,7 @@ export function useSubscription(): UseSubscriptionReturn {
         }
       }
     },
-    [state, requestPurchase],
+    [state, requestPurchase, subscriptions],
   );
 
   const reset = useCallback(() => {
