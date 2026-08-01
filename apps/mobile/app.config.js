@@ -4,7 +4,7 @@ module.exports = ({ config }) => ({
   ...config,
   name: "ScamShieldLite",
   slug: "scamshieldlite",
-  version: "1.0.2",
+  version: "1.0.1",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "automatic",
@@ -17,7 +17,6 @@ module.exports = ({ config }) => ({
   },
 
   android: {
-    versionCode: 4,
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: BRAND_NAVY,
