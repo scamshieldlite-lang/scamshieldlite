@@ -62,7 +62,9 @@ module.exports = ({ config }) => ({
   ],
 
   extra: {
-    apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000",
+    apiBaseUrl:
+      process.env.EXPO_PUBLIC_API_BASE_URL ??
+      "https://scamshieldlite-api.onrender.com",
     eas: {
       projectId: "8ea49fa7-ba5b-42ec-b27f-484a00d89e60",
     },
