@@ -34,9 +34,8 @@ interface UseSubscriptionReturn {
 const PACKAGE_NAME =
   Constants.expoConfig?.android?.package ?? "com.scamshieldlite.app";
 
-const { setPurchasing } = useAuth();
-
 export function useSubscription(): UseSubscriptionReturn {
+  const { setPurchasing } = useAuth();
   const [state, setState] = useState<PurchaseState>("initializing");
   const [error, setError] = useState<string | null>(null);
   const { refresh } = useSubscriptionContext();
