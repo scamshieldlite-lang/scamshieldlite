@@ -23,6 +23,8 @@ const DEFAULT_USAGE: UsageSummary = {
   scanLimit: 3,
   scansRemaining: 3,
   isGuest: true,
+  isLifetime: false,
+  resetAt: null,
 };
 
 const ScanUsageContext = createContext<ScanUsageContextValue | null>(null);

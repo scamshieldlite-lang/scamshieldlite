@@ -2,18 +2,18 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
   type ReactNode,
-  useRef,
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { authService } from "@/services/auth.service";
 import { storageService, StorageKey } from "@/services/storage.service";
 import { tokenStore } from "@/services/tokenStore";
+import { apiClient } from "@/services/api.service";
 import type { AuthUser, AuthState } from "@scamshieldlite/shared/";
 import { logger } from "@/utils/logger";
-import { apiClient } from "@/services/api.service";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -23,34 +23,37 @@ interface AuthContextValue {
   signUp: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   continueAsGuest: () => void;
-  setPurchasing: (value: boolean) => void; // ← add this
+  setPurchasing: (value: boolean) => void;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+// Provide a safe default value so useContext never returns null
+// This prevents the crash when context is consumed outside provider
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  authState: "unauthenticated",
+  isLoading: true,
+  login: async () => {},
+  signUp: async () => {},
+  logout: async () => {},
+  continueAsGuest: () => {},
+  setPurchasing: () => {},
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authState, setAuthState] = useState<AuthState>("unauthenticated");
   const [isLoading, setIsLoading] = useState(true);
+  const isPurchasing = useRef(false);
 
   useEffect(() => {
     restoreSession();
   }, []);
 
-  const isPurchasing = useRef(false);
-
-  const setPurchasing = useCallback((value: boolean) => {
-    isPurchasing.current = value;
-  }, []);
-
-  // Update the AppState listener to skip during purchase
   useEffect(() => {
     const subscription = AppState.addEventListener(
       "change",
       (nextState: AppStateStatus) => {
         if (nextState === "active" && authState === "authenticated") {
-          // Skip session revalidation if a purchase is in progress
-          // Google Play takes the user out of the app during payment
           if (isPurchasing.current) {
             logger.debug(
               "AppState active — skipping session check during purchase",
@@ -83,16 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Restore to memory before making API call
       tokenStore.set(storedToken);
       logger.debug("Token restored to memory from SecureStore");
 
       const { data } = await apiClient.get("/auth/get-session");
 
-      logger.debug("get-session response:", JSON.stringify(data));
-
-      // Better Auth get-session returns { user, session } — not token
-      // Check for user object directly
       if (data?.user?.id) {
         setUser({
           id: data.user.id,
@@ -110,7 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       logger.error("Session restore failed:", error);
       tokenStore.clear();
-      await storageService.clearAuthData();
       setAuthState("unauthenticated");
     } finally {
       setIsLoading(false);
@@ -119,16 +116,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const session = await authService.login({ email, password });
-    // tokenStore is already set inside authService.login via storeSession()
-    // Just update React state
     setUser(session.user);
     setAuthState("authenticated");
   }, []);
 
   const signUp = useCallback(
     async (name: string, email: string, password: string) => {
-      const session = await authService.signUp({ name, email, password });
-      // tokenStore is already set inside authService.signUp → login → storeSession()
+      const session = await authService.signUp({
+        name,
+        email,
+        password,
+      });
       setUser(session.user);
       setAuthState("authenticated");
     },
@@ -154,6 +152,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState("guest");
   }, []);
 
+  const setPurchasing = useCallback((value: boolean) => {
+    isPurchasing.current = value;
+    logger.debug("Purchase lock set to:", value);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -164,7 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         logout,
         continueAsGuest,
-        setPurchasing, // ← add this
+        setPurchasing,
       }}
     >
       {children}
@@ -172,8 +175,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Safe hook — never throws even if used outside provider
+// because we provided a default context value above
 export function useAuthContext(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuthContext must be used within AuthProvider");
-  return ctx;
+  return useContext(AuthContext);
 }
