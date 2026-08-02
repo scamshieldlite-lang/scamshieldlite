@@ -94,6 +94,14 @@ export const subscriptionController = {
    * the subscription. Never trust the client for purchase validation.
    */
   async verifyPurchase(req: Request, res: Response, next: NextFunction) {
+    // Log immediately on entry — before any middleware could block
+    logger.info(
+      {
+        hasAuthHeader: !!req.headers.authorization,
+        bodyKeys: Object.keys(req.body ?? {}),
+      },
+      "verify-purchase endpoint hit",
+    );
     try {
       if (!req.user) throw new UnauthorizedError();
 

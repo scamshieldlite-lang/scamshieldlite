@@ -5,6 +5,7 @@ import React, {
   useState,
   useCallback,
   type ReactNode,
+  useRef,
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { authService } from "@/services/auth.service";
@@ -22,6 +23,7 @@ interface AuthContextValue {
   signUp: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   continueAsGuest: () => void;
+  setPurchasing: (value: boolean) => void; // ← add this
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -35,12 +37,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restoreSession();
   }, []);
 
-  // Revalidate session when app comes back to foreground
+  const isPurchasing = useRef(false);
+
+  const setPurchasing = useCallback((value: boolean) => {
+    isPurchasing.current = value;
+  }, []);
+
+  // Update the AppState listener to skip during purchase
   useEffect(() => {
     const subscription = AppState.addEventListener(
       "change",
       (nextState: AppStateStatus) => {
         if (nextState === "active" && authState === "authenticated") {
+          // Skip session revalidation if a purchase is in progress
+          // Google Play takes the user out of the app during payment
+          if (isPurchasing.current) {
+            logger.debug(
+              "AppState active — skipping session check during purchase",
+            );
+            return;
+          }
+
           authService.getSession().then((session) => {
             if (!session?.user) {
               logger.warn("Session expired in background — logging out");
@@ -147,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         logout,
         continueAsGuest,
+        setPurchasing, // ← add this
       }}
     >
       {children}

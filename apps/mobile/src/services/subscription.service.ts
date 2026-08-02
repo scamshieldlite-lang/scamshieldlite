@@ -5,6 +5,7 @@ import type {
   VerifyPurchaseRequest,
   VerifyPurchaseResponse,
 } from "@scamshieldlite/shared/";
+import { logger } from "@/utils/logger";
 
 export const subscriptionService = {
   async getStatus(): Promise<SubscriptionState> {
@@ -17,10 +18,26 @@ export const subscriptionService = {
   async verifyPurchase(
     payload: VerifyPurchaseRequest,
   ): Promise<VerifyPurchaseResponse> {
-    const { data } = await apiClient.post<VerifyPurchaseResponse>(
-      "/subscription/verify-purchase",
-      payload,
-    );
-    return data;
+    try {
+      const { data } = await apiClient.post<VerifyPurchaseResponse>(
+        "/subscription/verify-purchase",
+        payload,
+      );
+      return data;
+    } catch (error: any) {
+      // If 401, wait 2 seconds and retry once
+      // Purchase flow timing can cause temporary auth issues
+      if (error?.response?.status === 401) {
+        logger.warn("verify-purchase got 401 — retrying after delay");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        const { data } = await apiClient.post<VerifyPurchaseResponse>(
+          "/subscription/verify-purchase",
+          payload,
+        );
+        return data;
+      }
+      throw error;
+    }
   },
 };

@@ -233,9 +233,22 @@ apiClient.interceptors.response.use(
     }
 
     if (status === 401) {
-      // Clear both memory and storage
-      tokenStore.clear();
-      await storageService.clearAuthData();
+      // Only clear auth if this is NOT a subscription or payment endpoint
+      // Those can get 401 due to timing during purchase flow
+      const isPaymentEndpoint =
+        url?.includes("subscription") ||
+        url?.includes("verify-purchase") ||
+        url?.includes("ensure-trial");
+
+      if (!isPaymentEndpoint) {
+        tokenStore.clear();
+        await storageService.clearAuthData();
+        logger.warn(`401 on ${url} — cleared auth state`);
+      } else {
+        logger.warn(
+          `401 on payment endpoint ${url} — NOT clearing auth (purchase flow timing)`,
+        );
+      }
     }
 
     logger.error(

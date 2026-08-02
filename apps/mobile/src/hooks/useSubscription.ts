@@ -12,6 +12,7 @@ import { PRODUCT_IDS, type ProductId } from "@shared/subscription";
 import { logger } from "@/utils/logger";
 import { extractErrorMessage } from "@/utils/errorMessage";
 import Constants from "expo-constants";
+import { useAuth } from "./useAuth";
 
 type PurchaseState =
   | "idle"
@@ -33,6 +34,8 @@ interface UseSubscriptionReturn {
 const PACKAGE_NAME =
   Constants.expoConfig?.android?.package ?? "com.scamshieldlite.app";
 
+const { setPurchasing } = useAuth();
+
 export function useSubscription(): UseSubscriptionReturn {
   const [state, setState] = useState<PurchaseState>("initializing");
   const [error, setError] = useState<string | null>(null);
@@ -53,34 +56,53 @@ export function useSubscription(): UseSubscriptionReturn {
     onPurchaseSuccess: async (purchase: Purchase) => {
       setState("verifying");
 
+      const verifyWithTimeout = async () => {
+        const timeout = new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Server verification timed out. Don't worry, your payment is safe.",
+                ),
+              ),
+            15000, // 15s is plenty for an API call
+          ),
+        );
+
+        return Promise.race([
+          subscriptionService.verifyPurchase({
+            purchaseToken: purchase.purchaseToken!,
+            productId: purchase.productId,
+            packageName: PACKAGE_NAME,
+          }),
+          timeout,
+        ]);
+      };
+
       try {
-        if (!purchase.purchaseToken) {
-          throw new Error("No purchase token in response");
-        }
+        // 1. Verify with backend
+        await verifyWithTimeout();
 
-        // 1. Verify server-side
-        await subscriptionService.verifyPurchase({
-          purchaseToken: purchase.purchaseToken,
-          productId: purchase.productId,
-          packageName: PACKAGE_NAME,
-        });
-
-        // 2. Acknowledge — only after successful backend verification
+        // 2. ONLY acknowledge after backend confirms
         await finishTransaction({
           purchase,
           isConsumable: false,
         });
 
-        // 3. Refresh app-wide subscription state
-        await refresh();
-
         setState("success");
-        logger.info("Purchase verified and acknowledged", {
-          productId: purchase.productId,
-        });
+
+        // 3. Refresh context asynchronously (don't block UI state)
+        refresh().catch((err) =>
+          logger.error("Non-fatal context refresh error:", err),
+        );
       } catch (err) {
-        logger.error("Purchase verification failed", err);
-        setError(extractErrorMessage(err));
+        const message = extractErrorMessage(err);
+        logger.error("Purchase verification failed or timed out:", message);
+
+        // Friendly error explaining their money is safe
+        setError(
+          "Verification took too long. If you were charged, tap 'Restore Purchases' or restart the app to activate.",
+        );
         setState("error");
       }
     },
@@ -123,7 +145,6 @@ export function useSubscription(): UseSubscriptionReturn {
   }, [connected, fetchProducts]);
 
   // ── Initiate purchase ─────────────────────────────────────────
-  // ── Initiate purchase ─────────────────────────────────────────
   const purchase = useCallback(
     async (productId: ProductId) => {
       if (state !== "ready") return;
@@ -131,45 +152,19 @@ export function useSubscription(): UseSubscriptionReturn {
       setState("purchasing");
       setError(null);
 
+      // Tell AuthContext not to clear session during purchase
+      // Google Play takes user out of app during payment flow
+      setPurchasing(true);
+
       try {
-        // 1. Find product by id/sku
-        const product = subscriptions.find(
-          (s) =>
-            s.id === productId || (s as { sku?: string }).sku === productId,
-        );
-
-        if (!product) {
-          throw new Error(
-            `Product ${productId} not found. Make sure it is active in Play Console.`,
-          );
-        }
-
-        // 2. Extract offerToken using v14 subscriptionOffers structure
-        const offerToken =
-          product.subscriptionOffers?.[0]?.offerTokenAndroid ??
-          (product.subscriptionOffers?.[0] as { offerToken?: string })
-            ?.offerToken;
-
-        // 3. Dispatch purchase request to Google Play
         await requestPurchase({
           request: {
             google: {
               skus: [productId],
-              ...(offerToken
-                ? {
-                    subscriptionOffers: [
-                      {
-                        sku: productId,
-                        offerToken,
-                      },
-                    ],
-                  }
-                : {}),
             },
           },
           type: "subs",
         });
-        // onPurchaseSuccess / onPurchaseError handles the rest
       } catch (err) {
         const msg = extractErrorMessage(err);
         if (!msg.toLowerCase().includes("cancel")) {
@@ -178,9 +173,11 @@ export function useSubscription(): UseSubscriptionReturn {
         } else {
           setState("ready");
         }
+        // Clear purchasing flag on error or cancel
+        setPurchasing(false);
       }
     },
-    [state, requestPurchase, subscriptions],
+    [state, requestPurchase, setPurchasing],
   );
 
   const reset = useCallback(() => {
