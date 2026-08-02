@@ -15,21 +15,4 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
-// 3. Fix broken deep type imports in react-native-gesture-handler
-config.resolver.extraNodeModules = {
-  ...config.resolver.extraNodeModules,
-  "react-native-gesture-handler/lib/typescript/components/touchables/TouchableNativeFeedback":
-    require.resolve(
-      "react-native-gesture-handler/src/components/touchables/TouchableNativeFeedback.android.tsx"
-    ),
-  "react-native-gesture-handler/lib/typescript/components/touchables/TouchableOpacity":
-    require.resolve(
-      "react-native-gesture-handler/src/components/touchables/TouchableOpacity.tsx"
-    ),
-  "react-native-gesture-handler/lib/typescript/components/touchables/TouchableWithoutFeedback":
-    require.resolve(
-      "react-native-gesture-handler/src/components/touchables/TouchableWithoutFeedback.tsx"
-    ),
-};
-
 module.exports = config;
