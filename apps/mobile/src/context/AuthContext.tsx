@@ -134,6 +134,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    if (__DEV__) {
+      console.trace("🔎 LOGOUT TRIGGERED FROM:");
+    }
     try {
       if (authState === "authenticated") {
         await authService.logout();

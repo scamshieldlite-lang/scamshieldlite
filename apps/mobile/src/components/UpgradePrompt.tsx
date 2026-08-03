@@ -2,10 +2,11 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Colors } from "@/constants/colors";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigation } from "@react-navigation/native";
 
 interface Props {
   isGuest: boolean;
-  isLifetime: boolean;
+  isLifetime?: boolean;
   onSubscribe?: () => void;
   onDismiss?: () => void;
 }
@@ -17,29 +18,31 @@ export default function UpgradePrompt({
   onDismiss,
 }: Props) {
   const { logout } = useAuth();
+  const navigation = useNavigation<any>();
 
-  // Calling logout sets authState → "unauthenticated"
-  // RootNavigator automatically swaps to AuthStack
-  // WelcomeScreen appears with Login + Sign up buttons
-  // No manual navigation needed
-  const handleSignUp = () => {
-    onDismiss?.(); // close the modal first
-    logout(); // then trigger the stack swap
+  // Guest action: Log out to access Welcome/Login screen
+  const handleGuestAuth = () => {
+    onDismiss?.();
+    logout();
   };
 
+  // Authenticated action: Open paywall directly without logging out
   const handleSubscribe = () => {
     onDismiss?.();
-    onSubscribe?.();
+    if (onSubscribe) {
+      onSubscribe();
+    } else {
+      navigation.navigate("Paywall");
+    }
   };
 
-  // Title and subtitle change based on context
   const title = isGuest
     ? "You've used all 3 free scans"
     : "Your free scans are exhausted";
 
   const subtitle = isGuest
-    ? "Create a free account to get a 3-day trial with 20 scans per day, then subscribe to keep scanning."
-    : "You've used all your free scans. Subscribe to ScamShieldLite to continue protecting yourself.";
+    ? "Sign in or create a free account to continue scanning."
+    : "Subscribe to ScamShieldLite to continue protecting yourself.";
 
   return (
     <View style={styles.container}>
@@ -48,20 +51,27 @@ export default function UpgradePrompt({
       <Text style={styles.subtitle}>{subtitle}</Text>
 
       {isGuest ? (
-        <TouchableOpacity style={styles.primaryButton} onPress={handleSignUp}>
-          <Text style={styles.primaryButtonText}>Create free account</Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleGuestAuth}
+          >
+            <Text style={styles.primaryButtonText}>
+              Sign In / Create Account
+            </Text>
+          </TouchableOpacity>
+        </>
       ) : (
         <TouchableOpacity
           style={styles.primaryButton}
           onPress={handleSubscribe}
         >
-          <Text style={styles.primaryButtonText}>View subscription plans</Text>
+          <Text style={styles.primaryButtonText}>View Subscription Plans</Text>
         </TouchableOpacity>
       )}
 
       {onDismiss && (
-        <TouchableOpacity onPress={onDismiss}>
+        <TouchableOpacity onPress={onDismiss} style={styles.dismissButton}>
           <Text style={styles.dismissText}>Maybe later</Text>
         </TouchableOpacity>
       )}
@@ -71,31 +81,27 @@ export default function UpgradePrompt({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
     padding: 24,
-    marginHorizontal: 16,
     alignItems: "center",
-    gap: 12,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-    shadowColor: Colors.surface,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    backgroundColor: Colors.background,
+    borderRadius: 16,
   },
-  emoji: { fontSize: 36 },
+  emoji: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700",
     color: Colors.textPrimary,
     textAlign: "center",
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
     color: Colors.textSecondary,
     textAlign: "center",
+    marginBottom: 20,
     lineHeight: 20,
   },
   primaryButton: {
@@ -104,16 +110,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
-    marginTop: 4,
+    marginBottom: 12,
   },
   primaryButtonText: {
-    color: Colors.white,
+    color: "#FFFFFF",
     fontWeight: "600",
-    fontSize: 15,
+    fontSize: 16,
+  },
+  dismissButton: {
+    paddingVertical: 8,
   },
   dismissText: {
     color: Colors.textMuted,
-    fontSize: 13,
-    marginTop: 4,
+    fontSize: 14,
   },
 });
