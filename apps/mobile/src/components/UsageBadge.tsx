@@ -1,11 +1,13 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useScanUsage } from "@/hooks/useScanUsage";
+import { useSubscriptionContext } from "@/context/SubscriptionContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Colors } from "@/constants/colors";
 
 export default function UsageBadge() {
   const { usage } = useScanUsage();
+  const { subscription } = useSubscriptionContext();
   const { authState } = useAuth();
 
   if (!usage) return null;
@@ -13,6 +15,17 @@ export default function UsageBadge() {
   // Use authState as source of truth for guest status
   // not the API response which may be stale
   const isGuest = authState !== "authenticated";
+
+  // If subscription is paid/active, override the badge
+  // to show subscription info instead of scan count
+  if (subscription?.isPaidActive) {
+    return (
+      <View style={[styles.container, styles.containerPaid]}>
+        <View style={[styles.dot, styles.dotOk]} />
+        <Text style={styles.text}>Pro — Unlimited scans</Text>
+      </View>
+    );
+  }
 
   const { scansRemaining, scanLimit, isLifetime } = usage;
   const isLow = scansRemaining <= 1;
@@ -97,4 +110,8 @@ const styles = StyleSheet.create({
   },
   textLow: { color: Colors.suspicious },
   textExhausted: { color: Colors.scam },
+  containerPaid: {
+    borderColor: Colors.safe + "55",
+    backgroundColor: Colors.safe + "0e",
+  },
 });

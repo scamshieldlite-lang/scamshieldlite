@@ -138,7 +138,8 @@ export default function AccountScreen() {
     );
   }, []);
 
-  const { subscription } = useSubscriptionContext();
+  const { subscription, refresh: refreshSubscription } =
+    useSubscriptionContext();
   const isPaid = subscription?.status === "active";
 
   // const navigation =
@@ -210,19 +211,67 @@ export default function AccountScreen() {
           <View style={styles.card}>
             <InfoRow
               label="Current plan"
-              value={usage?.isGuest ? "Guest" : "Free trial"}
-              valueColor={Colors.primary}
+              value={
+                subscription?.plan === "paid"
+                  ? "Pro — Active"
+                  : subscription?.plan === "free_trial"
+                    ? "Free trial"
+                    : subscription?.plan === "expired"
+                      ? "Trial expired"
+                      : "Guest"
+              }
+              valueColor={
+                subscription?.isPaidActive
+                  ? Colors.safe
+                  : subscription?.isTrialActive
+                    ? Colors.primary
+                    : Colors.textMuted
+              }
             />
-            <InfoRow label="Status" value="Active" valueColor={Colors.safe} />
-            {/* Subscribe button — Phase 11 */}
-            <TouchableOpacity
-              style={styles.subscribeButton}
-              onPress={() => navigation.navigate("Paywall")}
-            >
-              <Text style={styles.subscribeButtonText}>⭐ Upgrade to Pro</Text>
-            </TouchableOpacity>
-            {/* // Add this below it if user has an active subscription: */}
-            {isPaid && (
+            <InfoRow
+              label="Status"
+              value={
+                subscription?.isPaidActive
+                  ? "Active"
+                  : subscription?.isTrialActive
+                    ? `${subscription.daysRemaining} day${
+                        subscription.daysRemaining !== 1 ? "s" : ""
+                      } remaining`
+                    : "Inactive"
+              }
+              valueColor={
+                subscription?.hasFullAccess ? Colors.safe : Colors.scam
+              }
+            />
+
+            {/* Show expiry date if paid */}
+            {subscription?.isPaidActive && subscription.currentPeriodEnd && (
+              <InfoRow
+                label="Renews"
+                value={new Date(
+                  subscription.currentPeriodEnd,
+                ).toLocaleDateString("en-NG", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              />
+            )}
+
+            {/* Show upgrade button only if not paid */}
+            {!subscription?.isPaidActive && (
+              <TouchableOpacity
+                style={styles.subscribeButton}
+                onPress={() => navigation.navigate("Paywall")}
+              >
+                <Text style={styles.subscribeButtonText}>
+                  ⭐ Upgrade to Pro
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Show manage button only if paid */}
+            {subscription?.isPaidActive && (
               <TouchableOpacity
                 style={styles.manageButton}
                 onPress={() =>

@@ -8,6 +8,7 @@ import {
 } from "react-native-iap";
 import { subscriptionService } from "@/services/subscription.service";
 import { useSubscriptionContext } from "@/context/SubscriptionContext";
+import { useScanUsageContext } from "@/context/ScanUsageContext"; // 1. Added import
 import { PRODUCT_IDS, type ProductId } from "@shared/subscription";
 import { logger } from "@/utils/logger";
 import { extractErrorMessage } from "@/utils/errorMessage";
@@ -38,7 +39,10 @@ export function useSubscription(): UseSubscriptionReturn {
   const { setPurchasing } = useAuth();
   const [state, setState] = useState<PurchaseState>("initializing");
   const [error, setError] = useState<string | null>(null);
-  const { refresh } = useSubscriptionContext();
+
+  // 2. Consume both contexts and rename `refresh` to avoid collisions
+  const { refresh: refreshSubscription } = useSubscriptionContext();
+  const { refresh: refreshUsage } = useScanUsageContext();
 
   // ── useIAP v14 — callbacks handle purchase lifecycle ────────────
   const {
@@ -64,10 +68,9 @@ export function useSubscription(): UseSubscriptionReturn {
                   "Server verification timed out. Don't worry, your payment is safe.",
                 ),
               ),
-            15000, // 15s is plenty for an API call
+            15000, // 15s timeout
           ),
         );
-
         return Promise.race([
           subscriptionService.verifyPurchase({
             purchaseToken: purchase.purchaseToken!,
@@ -88,31 +91,35 @@ export function useSubscription(): UseSubscriptionReturn {
           isConsumable: false,
         });
 
-        setState("success");
-
-        // 3. Refresh context asynchronously (don't block UI state)
-        refresh().catch((err) =>
+        Promise.all([refreshSubscription(), refreshUsage()]).catch((err) =>
           logger.error("Non-fatal context refresh error:", err),
         );
+
+        logger.info(
+          `Purchase verified and refreshing UI: ${purchase.productId}`,
+        );
+
+        setState("success");
       } catch (err) {
         const message = extractErrorMessage(err);
         logger.error("Purchase verification failed or timed out:", message);
-
         // Friendly error explaining their money is safe
         setError(
           "Verification took too long. If you were charged, tap 'Restore Purchases' or restart the app to activate.",
         );
         setState("error");
+      } finally {
+        setPurchasing(false);
       }
     },
 
     onPurchaseError: (err) => {
+      setPurchasing(false);
       // User cancelled — treat as soft exit, not an error
       if (err.code === ErrorCode.UserCancelled) {
         setState("ready");
         return;
       }
-
       logger.error("IAP purchase error", err);
       setError(err.message ?? "Purchase failed. Please try again.");
       setState("error");
@@ -150,7 +157,6 @@ export function useSubscription(): UseSubscriptionReturn {
 
       setState("purchasing");
       setError(null);
-
       // Tell AuthContext not to clear session during purchase
       // Google Play takes user out of app during payment flow
       setPurchasing(true);
@@ -186,7 +192,7 @@ export function useSubscription(): UseSubscriptionReturn {
 
   return {
     state,
-    products: subscriptions, // useIAP stores fetched subs in `subscriptions`
+    products: subscriptions,
     error,
     purchase,
     reset,

@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useSubscriptionContext } from "@/context/SubscriptionContext";
+import { useScanUsageContext } from "@/context/ScanUsageContext";
 import {
   PRODUCT_IDS,
   PRODUCT_PRICES,
@@ -75,6 +76,8 @@ export default function PaywallScreen({
 }) {
   const { state, products, error, purchase, reset } = useSubscription();
   const { subscription } = useSubscriptionContext();
+  const { refresh: refreshSubscription } = useSubscriptionContext();
+  const { refresh: refreshUsage } = useScanUsageContext();
 
   const [selectedPlan, setSelectedPlan] = React.useState<ProductId>(
     PRODUCT_IDS.YEARLY,
@@ -83,6 +86,13 @@ export default function PaywallScreen({
   const handlePurchase = useCallback(async () => {
     await purchase(selectedPlan);
   }, [purchase, selectedPlan]);
+
+  useEffect(() => {
+    if (state === "success") {
+      refreshSubscription();
+      refreshUsage();
+    }
+  }, [state]);
 
   const handleRestore = useCallback(() => {
     Alert.alert(

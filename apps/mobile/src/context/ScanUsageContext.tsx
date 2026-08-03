@@ -54,7 +54,7 @@ export function ScanUsageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     logger.debug("ScanUsageContext: authState changed to", authState);
     refresh();
-  }, [authState]); // intentionally NOT including refresh — it's stable
+  }, [authState, refresh]); // intentionally NOT including refresh — it's stable
 
   const decrementOptimistic = useCallback(() => {
     setUsage((prev) =>
