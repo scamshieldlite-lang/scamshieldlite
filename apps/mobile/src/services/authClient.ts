@@ -15,7 +15,9 @@ const secureStorage = {
 };
 
 export const authClient = createAuthClient({
-  baseURL: process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000",
+  baseURL:
+    process.env.EXPO_PUBLIC_API_URL ??
+    "https://scamshieldlite-api.onrender.com",
   storage: secureStorage,
 });
 
