@@ -58,7 +58,7 @@ export const rateLimitService = {
       remaining: allowed ? Math.max(0, remaining - 1) : 0,
       tier,
       resetAt: null, // Hardcoded null for lifetime locks
-      isLifetime: true,
+      isLifetime,
     };
   },
 
@@ -81,7 +81,7 @@ export const rateLimitService = {
       remaining: Math.max(0, dailyLimit - count),
       tier,
       resetAt: null,
-      isLifetime: true,
+      isLifetime,
     };
   },
 };

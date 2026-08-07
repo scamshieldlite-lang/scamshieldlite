@@ -12,7 +12,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "http://192.168.43.93:3000",
+        "EXPO_PUBLIC_API_BASE_URL": "http://192.168.43.92:3000",
         "EXPO_PUBLIC_FALLBACK_API_URL": "http://localhost:3000"
       }
     },

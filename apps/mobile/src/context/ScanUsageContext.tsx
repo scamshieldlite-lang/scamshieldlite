@@ -43,7 +43,8 @@ export function ScanUsageProvider({ children }: { children: ReactNode }) {
       logger.debug("Scan usage refreshed:", JSON.stringify(data));
     } catch (error) {
       logger.warn("Failed to fetch scan usage", error);
-      setUsage(DEFAULT_USAGE);
+      // setUsage(DEFAULT_USAGE);
+      setUsage((prev) => prev ?? DEFAULT_USAGE);
     } finally {
       setIsLoading(false);
     }
@@ -51,10 +52,13 @@ export function ScanUsageProvider({ children }: { children: ReactNode }) {
 
   // ← re-fetch whenever authState changes
   // This covers: guest → authenticated, authenticated → guest, app restart
+  // Reset state on auth transition to avoid reading stale cache
   useEffect(() => {
     logger.debug("ScanUsageContext: authState changed to", authState);
+    setUsage(null);
+    setIsLoading(true);
     refresh();
-  }, [authState, refresh]); // intentionally NOT including refresh — it's stable
+  }, [authState, refresh]);
 
   const decrementOptimistic = useCallback(() => {
     setUsage((prev) =>

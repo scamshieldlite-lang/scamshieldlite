@@ -14,6 +14,7 @@ import { tokenStore } from "@/services/tokenStore";
 import { apiClient } from "@/services/api.service";
 import type { AuthUser, AuthState } from "@scamshieldlite/shared/";
 import { logger } from "@/utils/logger";
+import { authEvents } from "@/utils/authEvents";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -26,8 +27,6 @@ interface AuthContextValue {
   setPurchasing: (value: boolean) => void;
 }
 
-// Provide a safe default value so useContext never returns null
-// This prevents the crash when context is consumed outside provider
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   authState: "unauthenticated",
@@ -45,9 +44,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const isPurchasing = useRef(false);
 
+  // Clear session state and storage in one place
+  const handleUnauthorized = useCallback(async () => {
+    if (isPurchasing.current) {
+      logger.debug("Skipping unauthorized state wipe during purchase flow");
+      return;
+    }
+    logger.warn("Handling unauthorized event — clearing session");
+    tokenStore.clear();
+    await storageService.clearAuthData();
+    setUser(null);
+    setAuthState("unauthenticated");
+  }, []);
+
   useEffect(() => {
     restoreSession();
   }, []);
+
+  // Listen for 401 Unauthorized events emitted from apiClient
+  useEffect(() => {
+    const unsubscribe = authEvents.onUnauthorized(() => {
+      handleUnauthorized();
+    });
+    return () => unsubscribe();
+  }, [handleUnauthorized]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener(
@@ -64,17 +84,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           authService.getSession().then((session) => {
             if (!session?.user) {
               logger.warn("Session expired in background — logging out");
-              tokenStore.clear();
-              storageService.clearAuthData();
-              setUser(null);
-              setAuthState("unauthenticated");
+              handleUnauthorized();
             }
           });
         }
       },
     );
     return () => subscription.remove();
-  }, [authState]);
+  }, [authState, handleUnauthorized]);
 
   async function restoreSession() {
     try {
@@ -101,9 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logger.info("Session restored for:", data.user.email);
       } else {
         logger.warn("get-session returned no user — clearing token");
-        tokenStore.clear();
-        await storageService.clearAuthData();
-        setAuthState("unauthenticated");
+        await handleUnauthorized();
       }
     } catch (error) {
       logger.error("Session restore failed:", error);
@@ -144,12 +159,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Always clear even if API fails
     } finally {
-      tokenStore.clear();
-      await storageService.clearAuthData();
-      setUser(null);
-      setAuthState("unauthenticated");
+      await handleUnauthorized();
     }
-  }, [authState]);
+  }, [authState, handleUnauthorized]);
 
   const continueAsGuest = useCallback(() => {
     setAuthState("guest");
@@ -178,8 +190,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Safe hook — never throws even if used outside provider
-// because we provided a default context value above
 export function useAuthContext(): AuthContextValue {
   return useContext(AuthContext);
 }

@@ -17,22 +17,25 @@ import type { AppStackParamList } from "@/navigation/AppStack";
 import type { BottomTabParamList } from "@/navigation/BottomTabs";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { useScanner } from "@/hooks/useScanner";
 import { useAuth } from "@/hooks/useAuth";
 import { useScanUsage } from "@/hooks/useScanUsage";
+import { useSubscriptionContext } from "@/context/SubscriptionContext";
+// import { useSubscription } from "@/hooks/useSubscription"; // Assuming hook exists
 
 import UsageBadge from "@/components/UsageBadge";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import InputModeTabs, { type InputMode } from "@/components/InputModeTabs";
 import ScreenshotInput from "@/components/ScreenshotInput";
+import TrialExpiryBanner from "@/components/TrialExpiryBanner";
 
 import { Colors } from "@/constants/colors";
 import { INPUT_LIMITS } from "@/constants/limits";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import TrialExpiryBanner from "@/components/TrialExpiryBanner";
+import { useScanUsageContext } from "@/context/ScanUsageContext";
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<BottomTabParamList, "Scan">,
@@ -45,9 +48,11 @@ export default function ScanInputScreen({ navigation }: Props) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
+  const { usage, isLoading: isUsageLoading } = useScanUsageContext();
   const { scan, isLoading, error, isRateLimited, clearError } = useScanner();
   const { authState } = useAuth();
-  const { usage } = useScanUsage();
+  // const { usage } = useScanUsage();
+  const { subscription } = useSubscriptionContext(); // Destructure subscription state
 
   const charCount = text.trim().length;
   const isUnderMin = charCount > 0 && charCount < INPUT_LIMITS.MIN_LENGTH;
@@ -57,40 +62,63 @@ export default function ScanInputScreen({ navigation }: Props) {
     charCount <= INPUT_LIMITS.MAX_LENGTH &&
     !isLoading;
 
-  useEffect(() => {
-    if (isRateLimited) setShowUpgradeModal(true);
-  }, [isRateLimited]);
-
+  // Inside ScanInputScreen:
   useFocusEffect(
     useCallback(() => {
-      // Clear input whenever this screen comes into focus
-      // (after returning from result screen)
-      setText("");
-      clearError();
+      // Optional: runs when screen comes into focus
+      return () => {
+        // Runs when navigating away from the scan screen
+        setText("");
+        clearError();
+      };
     }, [clearError]),
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      if (usage && usage.scansRemaining === 0 && usage.isLifetime) {
-        setShowUpgradeModal(true);
-      }
-    }, [usage]),
-  );
+  useEffect(() => {
+    clearError();
+  }, [authState, clearError]);
+  // Single Focus Effect: Only clean form state when navigating back
+  // Single Source of Truth for Upgrade Modal
+  useEffect(() => {
+    // 1. Do not evaluate modal logic while fetching fresh usage
+    if (isUsageLoading || !usage) return;
 
-  // Shared scan trigger — used by both text and screenshot paths
+    // 2. Trigger from explicit API 429 Rate Limit
+    if (isRateLimited) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    const isPaidUser =
+      subscription?.hasFullAccess || subscription?.isPaidActive;
+    const isExhausted = usage.scansRemaining === 0;
+
+    if (isExhausted && !isPaidUser) {
+      setShowUpgradeModal(true);
+    } else {
+      setShowUpgradeModal(false);
+    }
+  }, [isRateLimited, usage, isUsageLoading, subscription, authState]);
+
+  // Shared scan trigger
   const triggerScan = useCallback(
     async (textToScan: string, type: InputMode = "text") => {
+      if (usage?.scansRemaining === 0) {
+        setShowUpgradeModal(true);
+        return;
+      }
       const result = await scan(textToScan.trim());
       if (result) {
+        // Clear input state immediately on success
+        setText("");
         navigation.navigate("ScanResult", {
           result,
           originalText: textToScan.trim(),
-          inputType: type, // passed to backend for analytics
+          inputType: type,
         });
       }
     },
-    [scan, navigation],
+    [usage?.scansRemaining, scan, navigation, setShowUpgradeModal],
   );
 
   const handlePaste = useCallback(async () => {
@@ -113,13 +141,14 @@ export default function ScanInputScreen({ navigation }: Props) {
     await triggerScan(text.trim(), "text");
   }, [canSubmit, text, triggerScan]);
 
-  // Called by ScreenshotInput after OCR extracts text
   const handleOcrTextExtracted = useCallback(
     async (extractedText: string) => {
       await triggerScan(extractedText, "screenshot");
     },
     [triggerScan],
   );
+
+  console.log("DEBUG USAGE STATE:", { usage, subscription, isRateLimited });
 
   const rootNavigation =
     useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -172,7 +201,7 @@ export default function ScanInputScreen({ navigation }: Props) {
             }}
           />
 
-          {/* ── Text mode ─────────────────────────────────────── */}
+          {/* Text mode */}
           {inputMode === "text" && (
             <>
               <View
@@ -267,10 +296,9 @@ export default function ScanInputScreen({ navigation }: Props) {
             </>
           )}
 
-          {/* ── Screenshot mode ───────────────────────────────── */}
+          {/* Screenshot mode */}
           {inputMode === "screenshot" && (
             <>
-              {/* Show loading overlay over screenshot UI during scan */}
               {isLoading && (
                 <LoadingSpinner
                   message="Analyzing extracted text…"
@@ -282,7 +310,6 @@ export default function ScanInputScreen({ navigation }: Props) {
                 <ScreenshotInput onTextExtracted={handleOcrTextExtracted} />
               )}
 
-              {/* Error banner for screenshot mode */}
               {error && !isRateLimited && !isLoading && (
                 <View style={styles.errorBanner}>
                   <Text style={styles.errorText}>⚠️ {error}</Text>
@@ -302,7 +329,7 @@ export default function ScanInputScreen({ navigation }: Props) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Rate limit upgrade modal */}
+      {/* Upgrade modal */}
       <Modal
         visible={showUpgradeModal}
         transparent

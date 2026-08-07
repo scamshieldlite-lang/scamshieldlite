@@ -22,19 +22,31 @@ export const tierResolverService = {
       const sub = await subscriptionService.getSubscription(userId);
 
       if (!sub) {
-        // Registered user with no subscription row — treat as guest-level
-        logger.warn({ userId }, "User has no subscription row");
-        return "expired";
+        logger.warn(
+          { userId },
+          "User has no subscription row — defaulting to trialing",
+        );
+        // Auto-create missing trial subscription on the fly
+        await subscriptionService.createTrialSubscription(userId, 20); // or default trial length
+        // Ensure new users default to trialing rather than locked out
+        return "trialing";
       }
+
+      const now = Date.now();
 
       switch (sub.status) {
         case "trialing": {
-          const isActive = sub.trialEnd > new Date();
+          const trialEndMs = sub.trialEnd
+            ? new Date(sub.trialEnd).getTime()
+            : 0;
+          const isActive = trialEndMs > now;
           return isActive ? "trialing" : "expired";
         }
         case "active": {
-          const isActive =
-            !!sub.currentPeriodEnd && sub.currentPeriodEnd > new Date();
+          const periodEndMs = sub.currentPeriodEnd
+            ? new Date(sub.currentPeriodEnd).getTime()
+            : 0;
+          const isActive = periodEndMs > now;
           return isActive ? "paid" : "expired";
         }
         case "expired":

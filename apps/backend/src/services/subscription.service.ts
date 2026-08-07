@@ -238,7 +238,7 @@ export const subscriptionService = {
     return {
       plan,
       status: sub.status,
-      trialEndsAt: sub.trialEnd.toISOString(),
+      trialEndsAt: sub.trialEnd?.toISOString() ?? null,
       currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
       isTrialActive,
       isPaidActive,

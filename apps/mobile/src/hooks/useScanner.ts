@@ -41,32 +41,36 @@ export function useScanner(): UseScannerReturn {
         const url = axiosError.config?.url;
 
         // Temporary — shows full error detail on screen during debugging
-        console.error(
-          "SCAN ERROR FULL:",
-          JSON.stringify(
-            {
-              code,
-              message,
-              status,
-              url,
-              isNetwork: !axiosError.response,
-              baseURL: axiosError.config?.baseURL,
-              responseData: axiosError.response?.data,
-            },
-            null,
-            2,
-          ),
-        );
+        if (__DEV__) {
+          console.error(
+            "SCAN ERROR FULL:",
+            JSON.stringify(
+              {
+                code,
+                message,
+                status,
+                url,
+                isNetwork: !axiosError.response,
+                baseURL: axiosError.config?.baseURL,
+                responseData: axiosError.response?.data,
+              },
+              null,
+              2,
+            ),
+          );
+        }
         await refresh();
 
         if (code === "RATE_LIMITED") {
           setIsRateLimited(true);
-          setError(
-            message ??
-              (usage?.isLifetime
-                ? "You have used all your free scans"
-                : "Daily scan limit reached"),
-          );
+          setError(null);
+          return null;
+          // setError(
+          //   message ??
+          //     (usage?.isLifetime
+          //       ? "You have used all your free scans"
+          //       : "Daily scan limit reached"),
+          // );
         } else if (code === "INVALID_INPUT") {
           setError(message ?? "Invalid message text");
         } else if (!axiosError.response) {

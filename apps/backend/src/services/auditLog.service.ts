@@ -73,7 +73,7 @@ export const auditLogService = {
         .from(auditLogs)
         .where(and(identityCondition, eq(auditLogs.action, "scan")));
 
-      const count = result[0]?.count ?? 0;
+      const count = Number(result[0]?.count ?? 0);
       logger.debug(
         {
           userId: params.userId,
@@ -100,7 +100,7 @@ export const auditLogService = {
         ),
       );
 
-    const count = result[0]?.count ?? 0;
+    const count = Number(result[0]?.count ?? 0);
     logger.debug(
       {
         userId: params.userId,
