@@ -32,6 +32,7 @@ interface PlanCardProps {
   productId: ProductId;
   label: string;
   price: string;
+  subtext?: string;
   badge?: string;
   isSelected: boolean;
   onSelect: () => void;
@@ -41,6 +42,7 @@ function PlanCard({
   productId,
   label,
   price,
+  subtext,
   badge,
   isSelected,
   onSelect,
@@ -58,6 +60,7 @@ function PlanCard({
         <View>
           <Text style={styles.planLabel}>{label}</Text>
           <Text style={styles.planPrice}>{price}</Text>
+          {subtext && <Text style={styles.planSubtext}>{subtext}</Text>}
         </View>
       </View>
       {badge && (
@@ -103,8 +106,6 @@ export default function PaywallScreen({
         {
           text: "Restore",
           onPress: () => {
-            // react-native-iap restore for Android uses
-            // getAvailablePurchases() — implement if needed
             Alert.alert(
               "Restore",
               "Restoration is handled automatically by Google Play.",
@@ -118,13 +119,14 @@ export default function PaywallScreen({
   const isLoading =
     state === "initializing" || state === "purchasing" || state === "verifying";
 
-  // Trial days remaining banner
+  // Active Trial Banner (If trial is already running)
   const trialBanner =
     subscription?.isTrialActive && subscription.daysRemaining
-      ? `${subscription.daysRemaining} day${subscription.daysRemaining !== 1 ? "s" : ""} left in your free trial`
+      ? `${subscription.daysRemaining} day${subscription.daysRemaining !== 1 ? "s" : ""} left in your 30-day free trial`
       : null;
 
   const navigation = useNavigation();
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       {/* Header */}
@@ -136,7 +138,7 @@ export default function PaywallScreen({
 
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.closeButtonWrapper} // 👈 Apply the wrapper style here
+          style={styles.closeButtonWrapper}
           hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
         >
           <Text style={styles.closeText}>✕</Text>
@@ -147,7 +149,14 @@ export default function PaywallScreen({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Trial banner */}
+        {/* Trial offer header badge */}
+        <View style={styles.trialOfferBadge}>
+          <Text style={styles.trialOfferText}>
+            🎁 Includes 30-Day Free Trial
+          </Text>
+        </View>
+
+        {/* Existing active trial banner */}
         {trialBanner && (
           <View style={styles.trialBanner}>
             <Text style={styles.trialBannerText}>⏳ {trialBanner}</Text>
@@ -170,14 +179,17 @@ export default function PaywallScreen({
           productId={PRODUCT_IDS.YEARLY}
           label="Yearly"
           price={PRODUCT_PRICES[PRODUCT_IDS.YEARLY]}
+          subtext="Just $4.00/mo · Save over 30%"
           badge="Best value"
           isSelected={selectedPlan === PRODUCT_IDS.YEARLY}
           onSelect={() => setSelectedPlan(PRODUCT_IDS.YEARLY)}
         />
+
         <PlanCard
           productId={PRODUCT_IDS.MONTHLY}
           label="Monthly"
           price={PRODUCT_PRICES[PRODUCT_IDS.MONTHLY]}
+          subtext="Billed monthly · Cancel anytime"
           isSelected={selectedPlan === PRODUCT_IDS.MONTHLY}
           onSelect={() => setSelectedPlan(PRODUCT_IDS.MONTHLY)}
         />
@@ -225,8 +237,8 @@ export default function PaywallScreen({
           ) : (
             <Text style={styles.ctaButtonText}>
               {state === "success"
-                ? "✅  Subscribed"
-                : `Subscribe — ${PRODUCT_PRICES[selectedPlan]}`}
+                ? "✅ Subscribed"
+                : "Start 30-Day Free Trial"}
             </Text>
           )}
         </TouchableOpacity>
@@ -236,9 +248,13 @@ export default function PaywallScreen({
           <Text style={styles.restoreText}>Restore purchases</Text>
         </TouchableOpacity>
 
+        {/* Legal Text */}
         <Text style={styles.legalText}>
-          Payment charged to your Google Play account. Subscription renews
-          automatically. Cancel anytime in Play Store → Subscriptions.
+          Start your 30-day free trial today. Payment will be charged to your
+          Google Play account after the 30-day trial period unless canceled.
+          Subscription automatically renews unless canceled at least 24 hours
+          before the end of the period. Manage or cancel anytime in Play Store →
+          Subscriptions.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -299,6 +315,24 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
     gap: 14,
+  },
+  trialOfferBadge: {
+    backgroundColor: "#E8F5E9",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  trialOfferText: {
+    color: "#2E7D32",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  planSubtext: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 2,
   },
   trialBanner: {
     backgroundColor: Colors.suspicious + "22",

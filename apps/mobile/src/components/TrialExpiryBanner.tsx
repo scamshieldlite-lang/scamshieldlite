@@ -6,7 +6,7 @@ import { Colors } from "@/constants/colors";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "@/navigation/AppStack";
 
-const SHOW_BANNER_DAYS = 3;
+const SHOW_BANNER_DAYS = 30;
 
 export default function TrialExpiryBanner() {
   const { subscription } = useSubscriptionContext();

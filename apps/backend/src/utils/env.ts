@@ -42,7 +42,7 @@ const envSchema = z.object({
   TRIAL_DAILY_SCAN_LIMIT: z.coerce.number().default(20),
 
   // Subscription / Trial
-  TRIAL_DURATION_DAYS: z.coerce.number().default(3),
+  TRIAL_DURATION_DAYS: z.coerce.number().default(30),
 
   // AI Configuration
   AI_GEMINI_MODEL: z.string().default("gemini-2.0-flash"),

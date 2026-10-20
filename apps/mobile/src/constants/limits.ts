@@ -6,7 +6,7 @@ export const SCAN_LIMITS = {
   PAID_DAILY: 100,
 } as const;
 
-export const TRIAL_DURATION_DAYS = 3;
+export const TRIAL_DURATION_DAYS = 30;
 
 export const INPUT_LIMITS = {
   MIN_LENGTH: 10,

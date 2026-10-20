@@ -137,7 +137,7 @@ export default function SignUpScreen({ navigation }: Props) {
           {/* Trial badge */}
           <View style={styles.trialBadge}>
             <Text style={styles.trialBadgeText}>
-              🎁 {TRIAL_DURATION_DAYS}-day free trial included
+              🎁 {TRIAL_DURATION_DAYS}-day free trial· No payment required
             </Text>
           </View>
 
