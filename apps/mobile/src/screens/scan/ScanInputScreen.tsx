@@ -17,7 +17,11 @@ import type { AppStackParamList } from "@/navigation/AppStack";
 import type { BottomTabParamList } from "@/navigation/BottomTabs";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import {
+  useFocusEffect,
+  useNavigation,
+  useIsFocused,
+} from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { useScanner } from "@/hooks/useScanner";
@@ -53,6 +57,8 @@ export default function ScanInputScreen({ navigation }: Props) {
   const { authState } = useAuth();
   // const { usage } = useScanUsage();
   const { subscription } = useSubscriptionContext(); // Destructure subscription state
+
+  const isFocused = useIsFocused();
 
   const charCount = text.trim().length;
   const isUnderMin = charCount > 0 && charCount < INPUT_LIMITS.MIN_LENGTH;
@@ -148,7 +154,7 @@ export default function ScanInputScreen({ navigation }: Props) {
     [triggerScan],
   );
 
-  console.log("DEBUG USAGE STATE:", { usage, subscription, isRateLimited });
+  // console.log("DEBUG USAGE STATE:", { usage, subscription, isRateLimited });
 
   const rootNavigation =
     useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -331,7 +337,7 @@ export default function ScanInputScreen({ navigation }: Props) {
 
       {/* Upgrade modal */}
       <Modal
-        visible={showUpgradeModal}
+        visible={showUpgradeModal && isFocused}
         transparent
         animationType="fade"
         onRequestClose={() => setShowUpgradeModal(false)}
@@ -340,6 +346,13 @@ export default function ScanInputScreen({ navigation }: Props) {
           <UpgradePrompt
             isGuest={authState === "guest"}
             isLifetime={usage?.isLifetime ?? false}
+            isDailyLimit={
+              // true when: authenticated user, NOT lifetime, scans remaining = 0
+              // this means they hit today's daily cap and it resets tomorrow
+              authState === "authenticated" &&
+              !(usage?.isLifetime ?? false) &&
+              (usage?.scansRemaining ?? 1) === 0
+            }
             onSubscribe={handleSubscribe}
             onDismiss={() => setShowUpgradeModal(false)}
           />

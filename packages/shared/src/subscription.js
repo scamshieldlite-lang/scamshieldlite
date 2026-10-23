@@ -9,7 +9,7 @@ exports.PRODUCT_IDS = {
 };
 // Pricing display — update to match your Play Console prices
 exports.PRODUCT_PRICES = {
-  [exports.PRODUCT_IDS.MONTHLY]: "$5.90/month",
-  [exports.PRODUCT_IDS.YEARLY]: "$47.99/year",
+  [exports.PRODUCT_IDS.MONTHLY]: "$5.99/month",
+  [exports.PRODUCT_IDS.YEARLY]: "$64.99/year",
 };
 //# sourceMappingURL=subscription.js.map

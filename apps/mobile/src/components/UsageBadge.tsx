@@ -35,7 +35,7 @@ export default function UsageBadge() {
   const remainingText = isExhausted
     ? isLifetime
       ? "All free scans used"
-      : "No scans remaining today"
+      : "Resets at midnight"
     : isLifetime
       ? `${scansRemaining} of ${scanLimit} free scans left`
       : `${scansRemaining} of ${scanLimit} scans remaining`;

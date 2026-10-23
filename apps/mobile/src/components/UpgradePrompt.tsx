@@ -7,6 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 interface Props {
   isGuest: boolean;
   isLifetime?: boolean;
+  isDailyLimit?: boolean; // ← new — true when trial user hits daily cap
   onSubscribe?: () => void;
   onDismiss?: () => void;
 }
@@ -14,19 +15,18 @@ interface Props {
 export default function UpgradePrompt({
   isGuest,
   isLifetime = false,
+  isDailyLimit = false,
   onSubscribe,
   onDismiss,
 }: Props) {
   const { logout } = useAuth();
   const navigation = useNavigation<any>();
 
-  // Guest action: Log out to access Welcome/Login screen
   const handleGuestAuth = () => {
     onDismiss?.();
     logout();
   };
 
-  // Authenticated action: Open paywall directly without logging out
   const handleSubscribe = () => {
     onDismiss?.();
     if (onSubscribe) {
@@ -36,37 +36,74 @@ export default function UpgradePrompt({
     }
   };
 
-  const title = isGuest
-    ? "You've used all 3 free scans"
-    : "Your free scans are exhausted";
+  // ── Determine the right message for each scenario ────────────────
 
-  const subtitle = isGuest
-    ? "Sign in or create a free account to continue scanning."
-    : "Subscribe to ScamShieldLite to continue protecting yourself.";
+  // Scenario 1: Guest who used all 3 lifetime free scans
+  const guestExhausted = isGuest && isLifetime;
+
+  // Scenario 2: Trial user who hit today's daily scan cap (resets tomorrow)
+  const trialDailyExhausted = !isGuest && isDailyLimit && !isLifetime;
+
+  // Scenario 3: Trial ended or paid subscription lapsed (lifetime limit)
+  const accountExhausted = !isGuest && isLifetime;
+
+  // ── Title ─────────────────────────────────────────────────────────
+  const title = guestExhausted
+    ? "You've used all 3 free scans"
+    : trialDailyExhausted
+      ? "Daily scans used up"
+      : "Your free scans are exhausted";
+
+  // ── Subtitle ──────────────────────────────────────────────────────
+  const subtitle = guestExhausted
+    ? "Create a free account to get a 30-day trial with 20 scans per day — no payment required."
+    : trialDailyExhausted
+      ? "You've used your 20 free scans for today. Your scans reset at midnight, or subscribe now for unlimited scanning."
+      : accountExhausted
+        ? "Your trial or subscription has ended. Subscribe to ScamShieldLite to continue protecting yourself."
+        : "Subscribe to ScamShieldLite to continue protecting yourself.";
+
+  // ── Emoji ─────────────────────────────────────────────────────────
+  const emoji = trialDailyExhausted ? "⏰" : "🚫";
 
   return (
     <View style={styles.container}>
-      <Text style={styles.emoji}>🚫</Text>
+      <Text style={styles.emoji}>{emoji}</Text>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
 
-      {isGuest ? (
+      {guestExhausted ? (
+        // Guest — push to create account (30-day trial pitch)
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleGuestAuth}
+        >
+          <Text style={styles.primaryButtonText}>Start 30-day free trial</Text>
+        </TouchableOpacity>
+      ) : trialDailyExhausted ? (
+        // Trial user hit daily cap — offer both options
         <>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={handleGuestAuth}
+            onPress={handleSubscribe}
           >
             <Text style={styles.primaryButtonText}>
-              Sign In / Create Account
+              Subscribe for unlimited scans
             </Text>
           </TouchableOpacity>
+          <View style={styles.resetNotice}>
+            <Text style={styles.resetText}>
+              🔄 Or wait — your free scans reset at midnight
+            </Text>
+          </View>
         </>
       ) : (
+        // Account exhausted — push to subscribe
         <TouchableOpacity
           style={styles.primaryButton}
           onPress={handleSubscribe}
         >
-          <Text style={styles.primaryButtonText}>View Subscription Plans</Text>
+          <Text style={styles.primaryButtonText}>View subscription plans</Text>
         </TouchableOpacity>
       )}
 
@@ -116,6 +153,23 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "600",
     fontSize: 16,
+  },
+  resetNotice: {
+    backgroundColor: Colors.surface,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 12,
+    width: "100%",
+    alignItems: "center",
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  resetText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 18,
   },
   dismissButton: {
     paddingVertical: 8,
